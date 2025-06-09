@@ -1,0 +1,199 @@
+import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { db } from '../services/database';
+import { createError } from '../middleware/errorHandler';
+import { AuthenticatedRequest } from '../middleware/auth';
+import {
+  ApiResponse,
+  CreateUserData,
+  LoginData,
+  AuthResponse,
+} from '../types';
+
+// Register new user
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const data: CreateUserData = req.body;
+
+    // Check if user already exists
+    const existingUser = await db.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+          { username: data.username },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw createError('User with this email or username already exists', 400);
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+
+    // Create user
+    const user = await db.prisma.user.create({
+      data: {
+        ...data,
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw createError('JWT secret not configured', 500);
+    }
+
+    const token = (jwt as any).sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    const authResponse: AuthResponse = {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        role: user.role,
+      },
+      token,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    };
+
+    const response: ApiResponse = {
+      success: true,
+      data: authResponse,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Login user
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { email, password }: LoginData = req.body;
+
+    // Find user by email
+    const user = await db.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user || !user.isActive) {
+      throw createError('Invalid credentials', 401);
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw createError('Invalid credentials', 401);
+    }
+
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw createError('JWT secret not configured', 500);
+    }
+
+    const token = (jwt as any).sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    const authResponse: AuthResponse = {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        role: user.role,
+      },
+      token,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    };
+
+    const response: ApiResponse = {
+      success: true,
+      data: authResponse,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get user profile
+export const getProfile = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const user = await db.prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw createError('User not found', 404);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: user,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};

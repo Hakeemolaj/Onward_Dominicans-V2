@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: onward-dominicans-backend
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: UPLOAD_PATH
+        value: ./uploads
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: LOG_LEVEL
+        value: info
+      - key: FRONTEND_URL
+        value: https://your-frontend-domain.com
+      - key: GEMINI_API_KEY
+        sync: false # Set this manually in Render dashboard
+
+databases:
+  - name: onward-dominicans-db
+    plan: free
+    databaseName: onward_dominicans
+    user: onward_dominicans_user

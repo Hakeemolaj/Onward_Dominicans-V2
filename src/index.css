@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for a more polished look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0; /* Lighter track */
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #2d3748; /* Darker track for dark mode */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a0a0a0; /* Softer thumb color */
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #718096; /* Adjusted thumb for dark mode */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Basic fade-in animation class for sections */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hero Section Text Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0; /* Initial state before animation starts */
+}
+
+/* Delay classes for staggered animations */
+.animation-delay-none { animation-delay: 0s; }
+.animation-delay-100 { animation-delay: 0.1s; }
+.animation-delay-200 { animation-delay: 0.2s; }
+.animation-delay-300 { animation-delay: 0.3s; }
+.animation-delay-400 { animation-delay: 0.4s; }
+.animation-delay-500 { animation-delay: 0.5s; }
+.animation-delay-600 { animation-delay: 0.6s; }
+.animation-delay-700 { animation-delay: 0.7s; }
+.animation-delay-800 { animation-delay: 0.8s; }
+.animation-delay-900 { animation-delay: 0.9s; }
+.animation-delay-1000 { animation-delay: 1s; }
+
+/* Custom link styles */
+.link {
+  color: #d97706;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #b45309;
+}
+
+html.dark .link {
+  color: #fbbf24;
+}
+
+html.dark .link:hover {
+  color: #f59e0b;
+}
+
+/* Custom text styles for dark mode */
+html.dark strong {
+  color: #f1f5f9;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4 {
+  color: #f1f5f9;
+}

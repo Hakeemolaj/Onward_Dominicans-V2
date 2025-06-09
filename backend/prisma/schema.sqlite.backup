@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      UserRole @default(VIEWER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  articles     Article[]
+  galleryItems GalleryItem[]
+
+  @@map("users")
+}
+
+model Author {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  bio       String?
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  articles Article[]
+  
+  @@map("authors")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?  // For UI theming
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  articles Article[]
+  
+  @@map("categories")
+}
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  summary     String
+  content     String
+  imageUrl    String?
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Foreign Keys
+  authorId   String
+  categoryId String?
+  createdBy  String
+
+  // Relations
+  author   Author    @relation(fields: [authorId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+  creator  User      @relation(fields: [createdBy], references: [id])
+  tags     Tag[]
+
+  @@map("articles")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  articles     Article[]
+  galleryItems GalleryItem[]
+
+  @@map("tags")
+}
+
+model GalleryCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?  // For UI theming
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  galleryItems      GalleryItem[]
+  slideshowSettings SlideshowSettings[]
+
+  @@map("gallery_categories")
+}
+
+model GalleryItem {
+  id           String           @id @default(cuid())
+  title        String
+  description  String?
+  imageUrl     String
+  thumbnailUrl String?
+  photographer String?
+  dateTaken    DateTime?
+  location     String?
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Stacking and grouping fields
+  stackGroup   String?          // Identifier for grouping images into stacks
+  stackOrder   Int?             @default(0) // Order within the stack
+  isStackCover Boolean          @default(false) // Whether this image is the cover of the stack
+
+  // Foreign Keys
+  categoryId String?
+  createdBy  String
+
+  // Relations
+  category GalleryCategory? @relation(fields: [categoryId], references: [id])
+  creator  User             @relation(fields: [createdBy], references: [id])
+  tags     Tag[]
+
+  @@map("gallery_items")
+}
+
+model SlideshowSettings {
+  id                String   @id @default(cuid())
+  name              String   @unique // e.g., "default", "category-specific"
+  autoAdvance       Boolean  @default(true)
+  intervalSeconds   Int      @default(5) // Time between slides in seconds
+  showControls      Boolean  @default(true)
+  showIndicators    Boolean  @default(true)
+  enableFullscreen  Boolean  @default(true)
+  transitionEffect String   @default("fade") // "fade", "slide", "zoom"
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Optional category-specific settings
+  categoryId String?
+  category   GalleryCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("slideshow_settings")
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  AUTHOR
+  VIEWER
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}

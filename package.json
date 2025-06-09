@@ -1,0 +1,40 @@
+{
+  "name": "onward-dominicans---news",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
+    "backend:start": "cd backend && npm start",
+    "backend:setup": "cd backend && npm install && npm run db:generate && npm run db:push",
+    "dev:full": "concurrently \"npm run dev\" \"npm run backend:dev\"",
+    "setup:backend": "cd backend && npm install",
+    "setup:full": "npm install && npm run setup:backend && npm run backend:setup",
+    "db:seed": "cd backend && npm run db:seed",
+    "db:studio": "cd backend && npm run db:studio",
+    "health": "curl -f http://localhost:3001/api/health || echo 'Backend not running'",
+    "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
+    "deploy:vercel": "npm run build && vercel --prod",
+    "deploy:gh-pages": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "@google/genai": "^1.4.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^4.5.1",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}
