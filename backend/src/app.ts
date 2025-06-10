@@ -24,6 +24,7 @@ import healthRoutes from './routes/health';
 import aiRoutes from './routes/ai';
 import galleryRoutes from './routes/gallery';
 import galleryCategoryRoutes from './routes/galleryCategories';
+import seedRoutes from './routes/seed';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
@@ -88,6 +89,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/gallery-categories', galleryCategoryRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -116,6 +118,20 @@ app.listen(PORT, '0.0.0.0', async () => {
   // Connect to database
   try {
     await db.connect();
+
+    // Auto-seed database in production if empty
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🔍 Checking if database needs seeding...');
+      const userCount = await db.prisma.user.count();
+      if (userCount === 0) {
+        console.log('🌱 Database is empty, starting auto-seeding...');
+        const { seedDatabase } = await import('./utils/seedProduction');
+        await seedDatabase();
+        console.log('✅ Auto-seeding completed!');
+      } else {
+        console.log('✅ Database already seeded, skipping auto-seed');
+      }
+    }
   } catch (error) {
     console.error('Failed to connect to database:', error);
   }
