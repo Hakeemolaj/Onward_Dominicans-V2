@@ -91,11 +91,12 @@ const NewsSection = forwardRef<HTMLDivElement, NewsSectionProps>((props, ref) =>
     // Initial load
     loadArticles();
 
-    // Set up auto-refresh every 30 seconds
+    // Disable auto-refresh to prevent rate limiting
+    // Set up auto-refresh every 5 minutes instead of 30 seconds
     const refreshInterval = setInterval(() => {
       console.log('🔄 Auto-refreshing articles...');
       loadArticles();
-    }, 30000); // 30 seconds
+    }, 300000); // 5 minutes (300,000 ms)
 
     // Cleanup interval on unmount
     return () => clearInterval(refreshInterval);

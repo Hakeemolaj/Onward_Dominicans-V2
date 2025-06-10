@@ -23,7 +23,7 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: FRONTEND_URL
-        value: https://your-frontend-domain.com
+        value: https://onward-dominicans.vercel.app
       - key: GEMINI_API_KEY
         sync: false # Set this manually in Render dashboard
 

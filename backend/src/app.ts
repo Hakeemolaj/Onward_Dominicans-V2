@@ -26,7 +26,7 @@ import galleryRoutes from './routes/gallery';
 import galleryCategoryRoutes from './routes/galleryCategories';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001');
 
 // Rate limiting
 const limiter = rateLimit({
@@ -50,6 +50,9 @@ app.use(cors({
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:5174', // Allow alternative port
     'http://localhost:5175', // Allow another alternative port
+    'http://10.0.2.15:5173', // Allow network access
+    'http://10.0.2.15:5174', // Allow network access alternative port
+    'http://10.0.2.15:5175', // Allow network access alternative port
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -97,11 +100,12 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🌍 Network access: http://10.0.2.15:${PORT}/api/health`);
 
   // Connect to database
   try {

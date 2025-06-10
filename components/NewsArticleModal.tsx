@@ -5,7 +5,7 @@ import SocialShareButtons from './SocialShareButtons';
 import { getAISummary } from '../services/aiService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
-import { SAMPLE_NEWS_ARTICLES } from '../constants';
+import { apiService } from '../services/apiService';
 
 interface NewsArticleModalProps {
   isOpen: boolean;
@@ -24,17 +24,77 @@ const NewsArticleModal: React.FC<NewsArticleModalProps> = ({ isOpen, onClose, ar
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
+  // Related articles state
+  const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState<string | null>(null);
+
+  // Function to load related articles from backend
+  const loadRelatedArticles = async (currentArticle: NewsArticle) => {
+    if (!currentArticle?.id) return;
+
+    try {
+      setRelatedLoading(true);
+      setRelatedError(null);
+      console.log('🔄 Loading related articles for:', currentArticle.title);
+
+      const response = await apiService.getRelatedArticles(currentArticle.id, {
+        limit: MAX_RELATED_ARTICLES
+      });
+
+      if (response.success && response.data) {
+        // Transform backend data to match frontend NewsArticle type
+        const transformedRelated: NewsArticle[] = response.data.map((article: any) => ({
+          id: article.id,
+          title: article.title,
+          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          summary: article.summary,
+          imageUrl: article.imageUrl || undefined,
+          category: article.category?.name || 'General',
+          author: {
+            name: article.author?.name || 'Unknown Author',
+            avatarUrl: article.author?.avatarUrl || undefined,
+            bio: article.author?.bio || ''
+          },
+          fullContent: article.content,
+          slug: article.slug,
+          tags: article.tags?.map((tag: any) => tag.name) || []
+        }));
+
+        setRelatedArticles(transformedRelated);
+        console.log(`✅ Loaded ${transformedRelated.length} related articles`);
+      } else {
+        throw new Error(response.error?.message || 'Failed to load related articles');
+      }
+    } catch (err) {
+      console.error('❌ Error loading related articles:', err);
+      setRelatedError(err instanceof Error ? err.message : 'Failed to load related articles');
+      setRelatedArticles([]);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen && article) {
       document.body.style.overflow = 'hidden';
       const timer = setTimeout(() => setShowContent(true), 50);
       setCurrentUrl(article.slug ? `${window.location.origin}/news/${article.slug}` : window.location.href);
-      
+
       // Reset states for the new article
       setAiSummary(null);
       setIsSummaryLoading(false);
       setSummaryError(null);
-      
+      setRelatedArticles([]);
+      setRelatedError(null);
+
+      // Load related articles
+      loadRelatedArticles(article);
+
       // Scroll modal to top when article changes
       const modalContent = document.querySelector('.news-article-modal-scrollable-content');
       if (modalContent) {
@@ -50,46 +110,6 @@ const NewsArticleModal: React.FC<NewsArticleModalProps> = ({ isOpen, onClose, ar
       document.body.style.overflow = '';
     }
   }, [isOpen, article]);
-
-
-  const relatedArticles = useMemo(() => {
-    if (!article) return [];
-
-    const findRelated = (): NewsArticle[] => {
-      const currentId = article.id;
-      let related: NewsArticle[] = [];
-      const seenIds = new Set<string>([currentId]);
-
-      // 1. By Category
-      if (article.category) {
-        SAMPLE_NEWS_ARTICLES.forEach(a => {
-          if (related.length < MAX_RELATED_ARTICLES && a.id !== currentId && a.category === article.category && !seenIds.has(a.id)) {
-            related.push(a);
-            seenIds.add(a.id);
-          }
-        });
-      }
-
-      // 2. By Tags (if needed)
-      if (related.length < MAX_RELATED_ARTICLES && article.tags && article.tags.length > 0) {
-        const currentTagsSet = new Set(article.tags);
-        SAMPLE_NEWS_ARTICLES.forEach(a => {
-          if (related.length < MAX_RELATED_ARTICLES && a.id !== currentId && !seenIds.has(a.id) && a.tags) {
-            for (const tag of a.tags) {
-              if (currentTagsSet.has(tag)) {
-                related.push(a);
-                seenIds.add(a.id);
-                break; 
-              }
-            }
-          }
-        });
-      }
-      return related.slice(0, MAX_RELATED_ARTICLES);
-    };
-    return findRelated();
-  }, [article]);
-
 
   if (!isOpen || !article) return null;
 
@@ -211,12 +231,32 @@ const NewsArticleModal: React.FC<NewsArticleModalProps> = ({ isOpen, onClose, ar
             <SocialShareButtons articleTitle={article.title} articleUrl={currentUrl} />
           </div>
 
-          {relatedArticles.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-              <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">You Might Also Like</h3>
+          {/* Related Articles Section */}
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">You Might Also Like</h3>
+
+            {relatedLoading && (
+              <div className="flex justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            )}
+
+            {relatedError && (
+              <div className="py-4">
+                <ErrorMessage message={relatedError} />
+              </div>
+            )}
+
+            {!relatedLoading && !relatedError && relatedArticles.length === 0 && (
+              <p className="text-slate-500 dark:text-slate-400 text-center py-4">
+                No related articles found.
+              </p>
+            )}
+
+            {!relatedLoading && !relatedError && relatedArticles.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {relatedArticles.map(related => (
-                  <div 
+                  <div
                     key={related.id}
                     className="bg-slate-50 dark:bg-slate-700 rounded-lg shadow-md dark:shadow-slate-900/50 overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 group"
                     onClick={() => handleRelatedArticleClick(related)}
@@ -225,9 +265,9 @@ const NewsArticleModal: React.FC<NewsArticleModalProps> = ({ isOpen, onClose, ar
                     onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') handleRelatedArticleClick(related);}}
                     aria-label={`Read more about ${related.title}`}
                   >
-                    <img 
-                      src={related.imageUrl || `https://picsum.photos/seed/${related.id}/300/180`} 
-                      alt={related.title} 
+                    <img
+                      src={related.imageUrl || `https://picsum.photos/seed/${related.id}/300/180`}
+                      alt={related.title}
                       className="w-full h-32 object-cover"
                       loading="lazy"
                     />
@@ -242,8 +282,8 @@ const NewsArticleModal: React.FC<NewsArticleModalProps> = ({ isOpen, onClose, ar
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </article>
          <button

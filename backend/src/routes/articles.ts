@@ -8,6 +8,9 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
+  setFeaturedArticle,
+  unsetFeaturedArticle,
+  getFeaturedArticle,
 } from '../controllers/articleController';
 
 const router = Router();
@@ -51,6 +54,7 @@ const getArticlesValidation = [
 
 // Public routes
 router.get('/', getArticlesValidation, validateRequest, getArticles);
+router.get('/featured/current', getFeaturedArticle);
 router.get('/:id', getArticleValidation, validateRequest, getArticle);
 
 // Protected routes (require authentication and editor role)
@@ -79,6 +83,25 @@ router.delete(
   getArticleValidation,
   validateRequest,
   deleteArticle
+);
+
+// Featured article management routes
+router.post(
+  '/:id/feature',
+  authenticateToken,
+  requireEditor,
+  getArticleValidation,
+  validateRequest,
+  setFeaturedArticle
+);
+
+router.delete(
+  '/:id/feature',
+  authenticateToken,
+  requireEditor,
+  getArticleValidation,
+  validateRequest,
+  unsetFeaturedArticle
 );
 
 export default router;

@@ -1,0 +1,31 @@
+{
+  "name": "onward-dominicans",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/admin.html",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": "https://onward-dominicans-backend.onrender.com/api"
+  },
+  "functions": {
+    "app/api/**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  }
+}

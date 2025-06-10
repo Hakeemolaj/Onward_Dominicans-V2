@@ -1,7 +1,18 @@
 // API Service for backend integration
 // This service provides methods to interact with the backend API
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Auto-detect API base URL based on current hostname
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  const currentHost = window.location.hostname;
+  const apiHost = currentHost === 'localhost' || currentHost === '127.0.0.1' ? 'localhost' : currentHost;
+  return `http://${apiHost}:3001/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -36,6 +47,8 @@ export interface ArticleFilters {
 class ApiService {
   private baseUrl: string;
   private token: string | null = null;
+  private requestCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 30000; // 30 seconds cache
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
@@ -61,7 +74,19 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+    const method = options.method || 'GET';
+
+    // Only cache GET requests
+    if (method === 'GET') {
+      const cacheKey = url;
+      const cached = this.requestCache.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        console.log('🎯 Using cached response for:', endpoint);
+        return cached.data;
+      }
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -81,6 +106,14 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(data.error?.message || `HTTP ${response.status}`);
+      }
+
+      // Cache successful GET requests
+      if (method === 'GET' && data.success) {
+        this.requestCache.set(url, {
+          data,
+          timestamp: Date.now()
+        });
       }
 
       return data;
@@ -178,6 +211,109 @@ class ApiService {
     return this.request(`/articles/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getFeaturedArticle(): Promise<ApiResponse> {
+    return this.request('/articles/featured/current');
+  }
+
+  async setFeaturedArticle(id: string): Promise<ApiResponse> {
+    return this.request(`/articles/${id}/feature`, {
+      method: 'POST',
+    });
+  }
+
+  async unsetFeaturedArticle(id: string): Promise<ApiResponse> {
+    return this.request(`/articles/${id}/feature`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get related articles for a specific article
+  async getRelatedArticles(articleId: string, options: {
+    limit?: number;
+    excludeIds?: string[];
+  } = {}): Promise<ApiResponse> {
+    const { limit = 6, excludeIds = [] } = options;
+
+    // First get the current article to understand its category and tags
+    const currentArticleResponse = await this.getArticle(articleId);
+
+    if (!currentArticleResponse.success || !currentArticleResponse.data) {
+      throw new Error('Could not fetch current article for related articles');
+    }
+
+    const currentArticle = currentArticleResponse.data;
+    const allExcludeIds = [articleId, ...excludeIds];
+
+    // Strategy 1: Find articles in the same category
+    let relatedArticles: any[] = [];
+
+    if (currentArticle.category?.id && relatedArticles.length < limit) {
+      const categoryResponse = await this.getArticles({
+        categoryId: currentArticle.category.id,
+        status: 'PUBLISHED',
+        limit: limit * 2, // Get more to filter out excluded ones
+        sortBy: 'publishedAt',
+        sortOrder: 'desc'
+      });
+
+      if (categoryResponse.success && categoryResponse.data) {
+        const categoryArticles = categoryResponse.data.filter(
+          (article: any) => !allExcludeIds.includes(article.id)
+        );
+        relatedArticles.push(...categoryArticles.slice(0, limit));
+      }
+    }
+
+    // Strategy 2: If we need more articles, find by tags
+    if (relatedArticles.length < limit && currentArticle.tags && currentArticle.tags.length > 0) {
+      const tagNames = currentArticle.tags.map((tag: any) => tag.name);
+      const tagResponse = await this.getArticles({
+        tags: tagNames,
+        status: 'PUBLISHED',
+        limit: limit * 2,
+        sortBy: 'publishedAt',
+        sortOrder: 'desc'
+      });
+
+      if (tagResponse.success && tagResponse.data) {
+        const existingIds = new Set([...allExcludeIds, ...relatedArticles.map(a => a.id)]);
+        const tagArticles = tagResponse.data.filter(
+          (article: any) => !existingIds.has(article.id)
+        );
+
+        const remainingSlots = limit - relatedArticles.length;
+        relatedArticles.push(...tagArticles.slice(0, remainingSlots));
+      }
+    }
+
+    // Strategy 3: If still need more, get recent articles from same author
+    if (relatedArticles.length < limit && currentArticle.author?.id) {
+      const authorResponse = await this.getArticles({
+        authorId: currentArticle.author.id,
+        status: 'PUBLISHED',
+        limit: limit,
+        sortBy: 'publishedAt',
+        sortOrder: 'desc'
+      });
+
+      if (authorResponse.success && authorResponse.data) {
+        const existingIds = new Set([...allExcludeIds, ...relatedArticles.map(a => a.id)]);
+        const authorArticles = authorResponse.data.filter(
+          (article: any) => !existingIds.has(article.id)
+        );
+
+        const remainingSlots = limit - relatedArticles.length;
+        relatedArticles.push(...authorArticles.slice(0, remainingSlots));
+      }
+    }
+
+    return {
+      success: true,
+      data: relatedArticles.slice(0, limit),
+      timestamp: new Date().toISOString()
+    };
   }
 
   // Authors

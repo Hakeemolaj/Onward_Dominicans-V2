@@ -86,15 +86,10 @@ const App: React.FC = () => {
   const loadFeaturedArticle = async () => {
     try {
       console.log('🔄 Loading featured article from backend...');
-      const response = await apiService.getArticles({
-        status: 'PUBLISHED',
-        limit: 1,
-        sortBy: 'publishedAt',
-        sortOrder: 'desc'
-      });
+      const response = await apiService.getFeaturedArticle();
 
-      if (response.success && response.data && response.data.length > 0) {
-        const article = response.data[0];
+      if (response.success && response.data) {
+        const article = response.data;
         const transformedArticle: NewsArticleType = {
           id: article.id,
           title: article.title,
@@ -129,11 +124,12 @@ const App: React.FC = () => {
     // Initial load
     loadFeaturedArticle();
 
-    // Set up auto-refresh every 30 seconds
+    // Disable auto-refresh to prevent rate limiting
+    // Set up auto-refresh every 5 minutes instead of 30 seconds
     const refreshInterval = setInterval(() => {
       console.log('🔄 Auto-refreshing featured article...');
       loadFeaturedArticle();
-    }, 30000); // 30 seconds
+    }, 300000); // 5 minutes (300,000 ms)
 
     // Cleanup interval on unmount
     return () => clearInterval(refreshInterval);

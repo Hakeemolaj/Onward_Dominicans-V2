@@ -19,7 +19,9 @@
     "health": "curl -f http://localhost:3001/api/health || echo 'Backend not running'",
     "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
     "deploy:vercel": "npm run build && vercel --prod",
-    "deploy:gh-pages": "npm run build && gh-pages -d dist"
+    "deploy:gh-pages": "npm run build && gh-pages -d dist",
+    "deploy:setup": "bash deploy-setup.sh",
+    "keep-alive": "node keep-alive.js"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",

@@ -60,6 +60,14 @@
       .toast.hide { animation: slideOut 0.3s ease-in; }
       @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+      /* Featured article selector styles */
+      .article-item { transition: all 0.2s ease; }
+      .article-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+      .dark .article-item:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+
+      /* Line clamp utility */
+      .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
@@ -672,7 +680,10 @@
             constructor() {
                 this.currentUser = null;
                 this.currentSection = 'dashboard';
-                this.apiBase = 'http://localhost:3001/api';
+                // Auto-detect API base URL based on current hostname
+                const currentHost = window.location.hostname;
+                const apiHost = currentHost === 'localhost' || currentHost === '127.0.0.1' ? 'localhost' : currentHost;
+                this.apiBase = `http://${apiHost}:3001/api`;
                 this.token = localStorage.getItem('admin-token');
                 this.articles = [];
                 this.authors = [];
@@ -680,6 +691,7 @@
                 this.galleryItems = [];
                 this.galleryCategories = [];
                 this.stats = {};
+                this.featuredArticle = null;
                 this.currentEditingArticle = null;
                 this.currentEditingAuthor = null;
                 this.currentEditingGalleryItem = null;
@@ -978,18 +990,22 @@
 
                     // Load stats with cache busting
                     const timestamp = Date.now();
-                    const [articlesResponse, authorsResponse] = await Promise.all([
+                    const [articlesResponse, authorsResponse, featuredResponse] = await Promise.all([
                         this.makeAPICall(`/articles?limit=5&_t=${timestamp}`),
-                        this.makeAPICall(`/authors?limit=10&_t=${timestamp}`)
+                        this.makeAPICall(`/authors?limit=10&_t=${timestamp}`),
+                        this.makeAPICall(`/articles/featured/current?_t=${timestamp}`)
                     ]);
 
                     console.log('📊 Articles response:', articlesResponse);
                     console.log('👥 Authors response:', authorsResponse);
+                    console.log('⭐ Featured article response:', featuredResponse);
 
                     this.articles = articlesResponse.data || [];
                     this.authors = authorsResponse.data || [];
+                    this.featuredArticle = featuredResponse.success ? featuredResponse.data : null;
 
                     console.log(`✅ Loaded ${this.articles.length} articles and ${this.authors.length} authors from backend`);
+                    console.log(`⭐ Featured article:`, this.featuredArticle?.title || 'None');
 
                     // Update article count in sidebar
                     document.getElementById('articles-count').textContent = articlesResponse.meta?.total || 0;
@@ -1001,6 +1017,59 @@
                             <p class="text-slate-600 dark:text-slate-400 mt-2">Welcome back! Here's what's happening with your news site.</p>
                             <div class="mt-2 text-sm text-green-600 dark:text-green-400">
                                 ✅ Data loaded from backend API (${this.articles.length} articles, ${this.authors.length} authors)
+                            </div>
+                        </div>
+
+                        <!-- Featured Article Management Section -->
+                        <div class="mb-8">
+                            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center">
+                                        <svg class="w-6 h-6 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        Featured Article Management
+                                    </h3>
+                                    <button onclick="adminDashboard.openFeaturedArticleSelector()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg btn-primary flex items-center space-x-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                        </svg>
+                                        <span>Change Featured</span>
+                                    </button>
+                                </div>
+
+                                ${this.featuredArticle ? `
+                                    <div class="flex flex-col md:flex-row gap-4">
+                                        <div class="md:w-1/3">
+                                            <img src="${this.featuredArticle.imageUrl || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'}"
+                                                 alt="${this.featuredArticle.title}"
+                                                 class="w-full h-32 object-cover rounded-lg">
+                                        </div>
+                                        <div class="md:w-2/3">
+                                            <h4 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">${this.featuredArticle.title}</h4>
+                                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                                                By ${this.featuredArticle.author?.name || 'Unknown Author'} •
+                                                ${new Date(this.featuredArticle.publishedAt || this.featuredArticle.createdAt).toLocaleDateString()}
+                                            </p>
+                                            <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">${this.featuredArticle.summary || 'No summary available'}</p>
+                                            <div class="mt-3 flex space-x-2">
+                                                <button onclick="adminDashboard.editArticle('${this.featuredArticle.id}')" class="text-yellow-600 hover:text-yellow-800 text-sm font-medium">Edit Article</button>
+                                                <button onclick="adminDashboard.unsetFeaturedArticle('${this.featuredArticle.id}')" class="text-orange-600 hover:text-orange-800 text-sm font-medium">Remove Featured</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="text-center py-8">
+                                        <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                        </svg>
+                                        <h4 class="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">No Featured Article</h4>
+                                        <p class="text-slate-500 dark:text-slate-500 mb-4">Select an article to feature on your homepage</p>
+                                        <button onclick="adminDashboard.openFeaturedArticleSelector()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg btn-primary">
+                                            Select Featured Article
+                                        </button>
+                                    </div>
+                                `}
                             </div>
                         </div>
 
@@ -1186,18 +1255,22 @@
                                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Article</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Author</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Featured</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700" id="articles-table-body">
                                         ${this.articles.map(article => `
-                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 ${article.isFeatured ? 'bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400' : ''}">
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <div class="flex items-center">
                                                         <img class="h-10 w-10 rounded-lg object-cover" src="${article.imageUrl || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&q=60'}" alt="">
                                                         <div class="ml-4">
-                                                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">${article.title}</div>
+                                                            <div class="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center">
+                                                                ${article.title}
+                                                                ${article.isFeatured ? '<svg class="w-4 h-4 text-yellow-500 ml-2" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>' : ''}
+                                                            </div>
                                                             <div class="text-sm text-slate-500 dark:text-slate-400">${article.summary.substring(0, 60)}...</div>
                                                         </div>
                                                     </div>
@@ -1206,10 +1279,22 @@
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${this.getStatusClass(article.status)}">${article.status}</span>
                                                 </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    ${article.isFeatured ?
+                                                        '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">⭐ Featured</span>' :
+                                                        '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">Regular</span>'
+                                                    }
+                                                </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">${new Date(article.createdAt).toLocaleDateString()}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     <div class="flex space-x-2">
                                                         <button onclick="adminDashboard.editArticle('${article.id}')" class="text-yellow-600 hover:text-yellow-900">Edit</button>
+                                                        ${article.status === 'PUBLISHED' ?
+                                                            (article.isFeatured ?
+                                                                `<button onclick="adminDashboard.unsetFeaturedArticle('${article.id}')" class="text-orange-600 hover:text-orange-900 font-medium">★ Unfeature</button>` :
+                                                                `<button onclick="adminDashboard.setFeaturedArticle('${article.id}')" class="text-green-600 hover:text-green-900 font-medium">☆ Feature</button>`
+                                                            ) : ''
+                                                        }
                                                         <button onclick="adminDashboard.deleteArticle('${article.id}')" class="text-red-600 hover:text-red-900">Delete</button>
                                                     </div>
                                                 </td>
@@ -1254,12 +1339,15 @@
             updateArticlesTable(articles) {
                 const tbody = document.getElementById('articles-table-body');
                 tbody.innerHTML = articles.map(article => `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 ${article.isFeatured ? 'bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400' : ''}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <img class="h-10 w-10 rounded-lg object-cover" src="${article.imageUrl || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&q=60'}" alt="">
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-slate-900 dark:text-slate-100">${article.title}</div>
+                                    <div class="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center">
+                                        ${article.title}
+                                        ${article.isFeatured ? '<svg class="w-4 h-4 text-yellow-500 ml-2" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>' : ''}
+                                    </div>
                                     <div class="text-sm text-slate-500 dark:text-slate-400">${article.summary.substring(0, 60)}...</div>
                                 </div>
                             </div>
@@ -1268,10 +1356,22 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${this.getStatusClass(article.status)}">${article.status}</span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${article.isFeatured ?
+                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">⭐ Featured</span>' :
+                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">Regular</span>'
+                            }
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">${new Date(article.createdAt).toLocaleDateString()}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
                                 <button onclick="adminDashboard.editArticle('${article.id}')" class="text-yellow-600 hover:text-yellow-900">Edit</button>
+                                ${article.status === 'PUBLISHED' ?
+                                    (article.isFeatured ?
+                                        `<button onclick="adminDashboard.unsetFeaturedArticle('${article.id}')" class="text-orange-600 hover:text-orange-900 font-medium">★ Unfeature</button>` :
+                                        `<button onclick="adminDashboard.setFeaturedArticle('${article.id}')" class="text-green-600 hover:text-green-900 font-medium">☆ Feature</button>`
+                                    ) : ''
+                                }
                                 <button onclick="adminDashboard.deleteArticle('${article.id}')" class="text-red-600 hover:text-red-900">Delete</button>
                             </div>
                         </td>
@@ -1289,20 +1389,25 @@
                 console.log('✏️ Opening article editor for:', articleId);
                 try {
                     // Load the article data
+                    console.log('🔄 Fetching article data from API...');
                     const response = await this.makeAPICall(`/articles/${articleId}`);
+                    console.log('📥 Article API response:', response);
+
                     if (response.success && response.data) {
+                        console.log('✅ Article data loaded successfully:', response.data);
                         this.currentEditingArticle = response.data;
-                        this.openArticleEditor(response.data);
+                        await this.openArticleEditor(response.data);
                     } else {
+                        console.error('❌ Failed to load article data:', response);
                         this.showToast('Failed to load article data', 'error');
                     }
                 } catch (error) {
-                    console.error('Error loading article:', error);
+                    console.error('❌ Error loading article:', error);
                     this.showToast('Error loading article data', 'error');
                 }
             }
 
-            openArticleEditor(article = null) {
+            async openArticleEditor(article = null) {
                 const modal = document.getElementById('article-editor-modal');
                 const title = document.getElementById('editor-modal-title');
                 const form = document.getElementById('article-editor-form');
@@ -1310,21 +1415,35 @@
                 // Set modal title
                 title.textContent = article ? 'Edit Article' : 'Create New Article';
 
-                // Load authors and categories
-                this.loadEditorData();
-
-                // Populate form if editing
-                if (article) {
-                    this.populateArticleForm(article);
-                } else {
-                    form.reset();
-                    document.getElementById('article-content').innerHTML = '';
-                    document.getElementById('image-preview').classList.add('hidden');
-                }
-
-                // Show modal
+                // Show modal first
                 modal.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
+
+                try {
+                    // Load authors and categories first
+                    console.log('🔄 Loading editor data (authors and categories)...');
+                    await this.loadEditorData();
+                    console.log('✅ Editor data loaded successfully');
+
+                    // Wait a moment for DOM to be ready
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // Then populate form if editing
+                    if (article) {
+                        console.log('📝 Populating form for article:', article.title);
+                        this.populateArticleForm(article);
+                    } else {
+                        console.log('🆕 Setting up form for new article');
+                        form.reset();
+                        const contentField = document.getElementById('article-content');
+                        const imagePreview = document.getElementById('image-preview');
+                        if (contentField) contentField.innerHTML = '';
+                        if (imagePreview) imagePreview.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('❌ Error in openArticleEditor:', error);
+                    this.showToast('Error loading editor: ' + error.message, 'error');
+                }
 
                 // Focus on title field
                 setTimeout(() => {
@@ -1341,14 +1460,26 @@
 
             async loadEditorData() {
                 try {
+                    console.log('🔄 Loading authors and categories for editor...');
+
                     // Load authors and categories for dropdowns
                     const [authorsResponse, categoriesResponse] = await Promise.all([
                         this.makeAPICall('/authors?limit=100'),
                         this.makeAPICall('/categories?limit=100')
                     ]);
 
-                    // Populate authors dropdown
+                    console.log('📊 Authors response:', authorsResponse);
+                    console.log('📊 Categories response:', categoriesResponse);
+
+                    // Check if form elements exist
                     const authorSelect = document.getElementById('article-author');
+                    const categorySelect = document.getElementById('article-category');
+
+                    if (!authorSelect || !categorySelect) {
+                        throw new Error('Author or category select elements not found in DOM');
+                    }
+
+                    // Populate authors dropdown
                     authorSelect.innerHTML = '<option value="">Select an author...</option>';
                     if (authorsResponse.success && authorsResponse.data) {
                         authorsResponse.data.forEach(author => {
@@ -1357,10 +1488,12 @@
                             option.textContent = author.name;
                             authorSelect.appendChild(option);
                         });
+                        console.log(`✅ Loaded ${authorsResponse.data.length} authors`);
+                    } else {
+                        console.warn('⚠️ No authors data received');
                     }
 
                     // Populate categories dropdown
-                    const categorySelect = document.getElementById('article-category');
                     categorySelect.innerHTML = '<option value="">Select a category...</option>';
                     if (categoriesResponse.success && categoriesResponse.data) {
                         categoriesResponse.data.forEach(category => {
@@ -1369,25 +1502,56 @@
                             option.textContent = category.name;
                             categorySelect.appendChild(option);
                         });
+                        console.log(`✅ Loaded ${categoriesResponse.data.length} categories`);
+                    } else {
+                        console.warn('⚠️ No categories data received');
                     }
+
+                    console.log('✅ Editor data loaded successfully');
                 } catch (error) {
-                    console.error('Error loading editor data:', error);
-                    this.showToast('Error loading editor data', 'error');
+                    console.error('❌ Error loading editor data:', error);
+                    this.showToast('Error loading editor data: ' + error.message, 'error');
+                    throw error; // Re-throw to be caught by openArticleEditor
                 }
             }
 
             populateArticleForm(article) {
-                document.getElementById('article-title').value = article.title || '';
-                document.getElementById('article-summary').value = article.summary || '';
-                document.getElementById('article-image').value = article.imageUrl || '';
-                document.getElementById('article-author').value = article.authorId || '';
-                document.getElementById('article-category').value = article.categoryId || '';
-                document.getElementById('article-status').value = article.status || 'DRAFT';
-                document.getElementById('article-content').innerHTML = article.content || '';
+                console.log('📝 Populating article form with data:', article);
 
-                // Show image preview if URL exists
-                if (article.imageUrl) {
-                    this.updateImagePreview(article.imageUrl);
+                try {
+                    // Check if all required form elements exist
+                    const titleField = document.getElementById('article-title');
+                    const summaryField = document.getElementById('article-summary');
+                    const imageField = document.getElementById('article-image');
+                    const authorField = document.getElementById('article-author');
+                    const categoryField = document.getElementById('article-category');
+                    const statusField = document.getElementById('article-status');
+                    const contentField = document.getElementById('article-content');
+
+                    if (!titleField || !summaryField || !imageField || !authorField || !categoryField || !statusField || !contentField) {
+                        throw new Error('One or more form fields are missing from the DOM');
+                    }
+
+                    // Populate form fields safely
+                    titleField.value = article.title || '';
+                    summaryField.value = article.summary || '';
+                    imageField.value = article.imageUrl || '';
+                    authorField.value = article.authorId || '';
+                    categoryField.value = article.categoryId || '';
+                    statusField.value = article.status || 'DRAFT';
+                    contentField.innerHTML = article.content || '';
+
+                    // Show image preview if URL exists
+                    if (article.imageUrl) {
+                        this.updateImagePreview(article.imageUrl);
+                    }
+
+                    console.log('✅ Article form populated successfully');
+                } catch (error) {
+                    console.error('❌ Error populating article form:', error);
+                    console.error('❌ Article data:', article);
+                    console.error('❌ Error details:', error.message);
+                    this.showToast('Error populating form data: ' + error.message, 'error');
                 }
             }
 
@@ -1494,6 +1658,153 @@
                 } catch (error) {
                     console.error('Error deleting article:', error);
                     this.showToast('Error deleting article', 'error');
+                }
+            }
+
+            async setFeaturedArticle(articleId) {
+                try {
+                    console.log('⭐ Setting article as featured:', articleId);
+                    const response = await this.makeAPICall(`/articles/${articleId}/feature`, 'POST');
+                    if (response.success) {
+                        this.showToast('Article set as featured successfully!', 'success');
+                        this.loadArticles(); // Refresh the list
+                        // Refresh dashboard if we're on it
+                        if (this.currentSection === 'dashboard') {
+                            this.loadDashboard();
+                        }
+                    } else {
+                        this.showToast(response.error?.message || 'Failed to set article as featured', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error setting featured article:', error);
+                    this.showToast('Error setting article as featured', 'error');
+                }
+            }
+
+            async unsetFeaturedArticle(articleId) {
+                try {
+                    console.log('🔄 Removing featured status from article:', articleId);
+                    const response = await this.makeAPICall(`/articles/${articleId}/feature`, 'DELETE');
+                    if (response.success) {
+                        this.showToast('Article unfeatured successfully!', 'success');
+                        this.featuredArticle = null; // Clear featured article
+                        this.loadArticles(); // Refresh the list
+                        // Refresh dashboard if we're on it
+                        if (this.currentSection === 'dashboard') {
+                            this.loadDashboard();
+                        }
+                    } else {
+                        this.showToast(response.error?.message || 'Failed to unfeature article', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error unfeaturing article:', error);
+                    this.showToast('Error unfeaturing article', 'error');
+                }
+            }
+
+            async openFeaturedArticleSelector() {
+                try {
+                    console.log('🔄 Loading published articles for featured selection...');
+                    const response = await this.makeAPICall('/articles?status=PUBLISHED&limit=50');
+
+                    if (!response.success) {
+                        this.showToast('Failed to load articles', 'error');
+                        return;
+                    }
+
+                    const publishedArticles = response.data || [];
+                    console.log(`✅ Loaded ${publishedArticles.length} published articles`);
+
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                    modal.innerHTML = `
+                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200">Select Featured Article</h3>
+                                <button onclick="this.closest('.fixed').remove()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="p-6">
+                                <div class="mb-4">
+                                    <input type="text" id="featured-search" placeholder="Search articles..."
+                                           class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
+                                </div>
+
+                                <div class="max-h-96 overflow-y-auto" id="featured-articles-list">
+                                    ${publishedArticles.length > 0 ? publishedArticles.map(article => `
+                                        <div class="article-item border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-3 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors ${article.isFeatured ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600' : ''}"
+                                             onclick="adminDashboard.selectFeaturedArticle('${article.id}', this.closest('.fixed'))"
+                                             data-title="${article.title.toLowerCase()}"
+                                             data-author="${(article.author?.name || '').toLowerCase()}">
+                                            <div class="flex gap-4">
+                                                <img src="${article.imageUrl || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80'}"
+                                                     alt="${article.title}"
+                                                     class="w-20 h-20 object-cover rounded-lg flex-shrink-0">
+                                                <div class="flex-grow">
+                                                    <div class="flex items-start justify-between">
+                                                        <h4 class="font-semibold text-slate-800 dark:text-slate-200 mb-1">${article.title}</h4>
+                                                        ${article.isFeatured ? '<span class="text-yellow-600 dark:text-yellow-400 text-sm font-medium">★ Currently Featured</span>' : ''}
+                                                    </div>
+                                                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                                                        By ${article.author?.name || 'Unknown Author'} •
+                                                        ${new Date(article.publishedAt || article.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                    <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">${article.summary || 'No summary available'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('') : '<p class="text-center text-slate-500 py-8">No published articles available</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.body.appendChild(modal);
+
+                    // Add search functionality
+                    const searchInput = modal.querySelector('#featured-search');
+                    searchInput.addEventListener('input', (e) => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        const articles = modal.querySelectorAll('.article-item');
+
+                        articles.forEach(article => {
+                            const title = article.dataset.title;
+                            const author = article.dataset.author;
+                            const matches = title.includes(searchTerm) || author.includes(searchTerm);
+                            article.style.display = matches ? 'block' : 'none';
+                        });
+                    });
+
+                } catch (error) {
+                    console.error('Error opening featured article selector:', error);
+                    this.showToast('Error loading article selector', 'error');
+                }
+            }
+
+            async selectFeaturedArticle(articleId, modal) {
+                try {
+                    console.log('⭐ Setting new featured article:', articleId);
+                    const response = await this.makeAPICall(`/articles/${articleId}/feature`, 'POST');
+
+                    if (response.success) {
+                        this.showToast('Featured article updated successfully!', 'success');
+                        modal.remove();
+
+                        // Refresh data
+                        await this.loadDashboard();
+                        if (this.currentSection === 'articles') {
+                            this.loadArticles();
+                        }
+                    } else {
+                        this.showToast(response.error?.message || 'Failed to set featured article', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error setting featured article:', error);
+                    this.showToast('Error setting featured article', 'error');
                 }
             }
 
@@ -2249,7 +2560,7 @@
 
                 // Show image preview if URL exists
                 if (item.imageUrl) {
-                    this.updateImagePreview(imageInput, 0);
+                    this.updateGalleryImagePreview(imageInput, 0);
                 }
 
                 // If this item is part of a stack, load other stack images
@@ -2280,7 +2591,7 @@
 
                         if (stackItem.imageUrl) {
                             const index = container.children.length - 1;
-                            this.updateImagePreview(imageInput, index);
+                            this.updateGalleryImagePreview(imageInput, index);
                         }
                     }
                 } catch (error) {
@@ -2293,12 +2604,12 @@
                 const imageInputs = document.querySelectorAll('.image-input-group input[name="imageUrl"]');
                 imageInputs.forEach((input, index) => {
                     input.addEventListener('input', (e) => {
-                        this.updateImagePreview(e.target, index);
+                        this.updateGalleryImagePreview(e.target, index);
                     });
                 });
             }
 
-            updateImagePreview(input, index) {
+            updateGalleryImagePreview(input, index) {
                 const group = input.closest('.image-input-group');
                 const preview = group.querySelector('.image-preview');
                 const img = preview.querySelector('img');
@@ -2359,7 +2670,7 @@
                 // Setup listener for the new input
                 const newInput = imageGroup.querySelector('input[name="imageUrl"]');
                 newInput.addEventListener('input', (e) => {
-                    this.updateImagePreview(e.target, newIndex);
+                    this.updateGalleryImagePreview(e.target, newIndex);
                 });
 
                 // Update button state

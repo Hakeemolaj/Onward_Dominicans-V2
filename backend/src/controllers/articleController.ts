@@ -391,3 +391,226 @@ export const deleteArticle = async (
     next(error);
   }
 };
+
+// Set article as featured
+export const setFeaturedArticle = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Check if article exists and is published
+    const existingArticle = await db.prisma.article.findUnique({
+      where: { id },
+    });
+
+    if (!existingArticle) {
+      throw createError('Article not found', 404);
+    }
+
+    if (existingArticle.status !== 'PUBLISHED') {
+      throw createError('Only published articles can be featured', 400);
+    }
+
+    // First, unset any existing featured articles
+    await db.prisma.article.updateMany({
+      where: { isFeatured: true },
+      data: { isFeatured: false },
+    });
+
+    // Set this article as featured
+    const article = await db.prisma.article.update({
+      where: { id },
+      data: { isFeatured: true },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      data: article,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Unset featured article
+export const unsetFeaturedArticle = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Check if article exists
+    const existingArticle = await db.prisma.article.findUnique({
+      where: { id },
+    });
+
+    if (!existingArticle) {
+      throw createError('Article not found', 404);
+    }
+
+    // Unset featured status
+    const article = await db.prisma.article.update({
+      where: { id },
+      data: { isFeatured: false },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      data: article,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get featured article
+export const getFeaturedArticle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // First try to get a featured article
+    let article = await db.prisma.article.findFirst({
+      where: {
+        status: 'PUBLISHED',
+        isFeatured: true,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    // If no featured article, fall back to most recent published article
+    if (!article) {
+      article = await db.prisma.article.findFirst({
+        where: {
+          status: 'PUBLISHED',
+        },
+        orderBy: {
+          publishedAt: 'desc',
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              bio: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      });
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: article,
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
