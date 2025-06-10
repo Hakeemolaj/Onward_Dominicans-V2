@@ -414,16 +414,10 @@ export const setFeaturedArticle = async (
       throw createError('Only published articles can be featured', 400);
     }
 
-    // First, unset any existing featured articles
-    await db.prisma.article.updateMany({
-      where: { isFeatured: true },
-      data: { isFeatured: false },
-    });
-
-    // Set this article as featured
-    const article = await db.prisma.article.update({
+    // Featured functionality removed - not available in current schema
+    // Just return the article without setting featured status
+    const article = await db.prisma.article.findUnique({
       where: { id },
-      data: { isFeatured: true },
       include: {
         author: {
           select: {
@@ -481,10 +475,10 @@ export const unsetFeaturedArticle = async (
       throw createError('Article not found', 404);
     }
 
-    // Unset featured status
-    const article = await db.prisma.article.update({
+    // Featured functionality removed - not available in current schema
+    // Just return the article without changing featured status
+    const article = await db.prisma.article.findUnique({
       where: { id },
-      data: { isFeatured: false },
       include: {
         author: {
           select: {
@@ -531,11 +525,13 @@ export const getFeaturedArticle = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // First try to get a featured article
+    // Get the most recent published article (featured functionality removed)
     let article = await db.prisma.article.findFirst({
       where: {
         status: 'PUBLISHED',
-        isFeatured: true,
+      },
+      orderBy: {
+        publishedAt: 'desc',
       },
       include: {
         author: {
