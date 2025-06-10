@@ -680,15 +680,9 @@
             constructor() {
                 this.currentUser = null;
                 this.currentSection = 'dashboard';
-                // Auto-detect API base URL based on current hostname
-                const currentHost = window.location.hostname;
-                if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-                    // Local development
-                    this.apiBase = 'http://localhost:3001/api';
-                } else {
-                    // Production - use the deployed backend
-                    this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
-                }
+                // Force production API URL for admin panel
+                this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
+                console.log('🔧 Admin API Base URL:', this.apiBase);
                 this.token = localStorage.getItem('admin-token');
                 this.articles = [];
                 this.authors = [];
