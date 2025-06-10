@@ -1,5 +1,4 @@
 {
-  "name": "onward-dominicans",
   "version": 2,
   "builds": [
     {
@@ -21,11 +20,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://onward-dominicans-backend.onrender.com/api"
-  },
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "@vercel/node"
-    }
+    "VITE_API_URL": "https://onward-dominicans-backend-v2.onrender.com/api"
   }
 }
