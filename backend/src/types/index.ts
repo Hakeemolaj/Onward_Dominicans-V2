@@ -1,5 +1,17 @@
+import { Request } from 'express';
+
 // Re-export Prisma types
 export * from '@prisma/client';
+
+// Express types
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    username: string;
+    role: string;
+  };
+}
 
 // API Response types
 export interface ApiResponse<T = any> {
