@@ -49,6 +49,8 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'https://odmailsu.vercel.app', // Production frontend
+    'https://odmailsu-ghd1kiimw-hakeemolajs-projects.vercel.app', // Vercel preview URL
+    /^https:\/\/odmailsu.*\.vercel\.app$/, // All Vercel deployment URLs
     'http://localhost:5173', // Local development
     'http://localhost:5174', // Allow alternative port
     'http://localhost:5175', // Allow another alternative port

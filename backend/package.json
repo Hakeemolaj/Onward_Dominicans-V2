@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/app.ts",
     "build": "tsc && prisma generate",
-    "start": "node dist/app.js",
+    "start": "prisma db push && node seed-production.js && node dist/app.js",
     "postinstall": "prisma generate",
     "prepare:production": "node scripts/prepare-production.js",
     "db:generate": "prisma generate",
