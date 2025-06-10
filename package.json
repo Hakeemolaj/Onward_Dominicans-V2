@@ -21,7 +21,8 @@
     "deploy:vercel": "npm run build && vercel --prod",
     "deploy:gh-pages": "npm run build && gh-pages -d dist",
     "deploy:setup": "bash deploy-setup.sh",
-    "keep-alive": "node keep-alive.js"
+    "keep-alive": "node keep-alive.js",
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",

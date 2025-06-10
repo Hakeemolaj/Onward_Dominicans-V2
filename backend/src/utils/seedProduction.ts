@@ -98,7 +98,6 @@ Thank you for being part of our community.
         authorId: defaultAuthor.id,
         categoryId: defaultCategory.id,
         createdBy: adminUser.id,
-        isFeatured: true, // Make this the featured article
       },
     });
 

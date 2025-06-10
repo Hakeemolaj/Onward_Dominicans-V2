@@ -1,7 +1,11 @@
 // Application configuration
 export const config = {
-  // API Configuration
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  // API Configuration - Use Supabase REST API for production
+  apiUrl: import.meta.env.VITE_API_URL || import.meta.env.VITE_SUPABASE_URL + '/rest/v1' || 'http://localhost:3001/api',
+
+  // Supabase Configuration
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://zrsfmghkjhxkjjzkigck.supabase.co',
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
   
   // Feature Flags
   features: {

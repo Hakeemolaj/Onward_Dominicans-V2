@@ -6,11 +6,11 @@ import { ApiResponse } from '../types';
 const router = Router();
 
 // Manual seeding endpoint (for production use)
-router.post('/production', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/production', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Only allow in production environment
     if (process.env.NODE_ENV !== 'production') {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         error: {
           message: 'Seeding endpoint only available in production',
@@ -18,6 +18,7 @@ router.post('/production', async (req: Request, res: Response, next: NextFunctio
         },
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     console.log('🌱 Manual seeding requested...');
@@ -40,10 +41,10 @@ router.post('/production', async (req: Request, res: Response, next: NextFunctio
 });
 
 // Health check for seeding status
-router.get('/status', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/status', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { db } = await import('../services/database');
-    
+
     const userCount = await db.prisma.user.count();
     const articleCount = await db.prisma.article.count();
     const authorCount = await db.prisma.author.count();

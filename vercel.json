@@ -20,6 +20,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://onward-dominicans-backend-v2.onrender.com/api"
+    "VITE_API_URL": "@vite_api_url"
   }
 }

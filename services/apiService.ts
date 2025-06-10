@@ -1,5 +1,8 @@
 // API Service for backend integration
-// This service provides methods to interact with the backend API
+// This service provides methods to interact with the backend API or Supabase
+
+import { supabaseService } from './supabaseService';
+import { config } from '../config';
 
 // Auto-detect API base URL based on current hostname
 const getApiBaseUrl = () => {
@@ -13,6 +16,11 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Check if we should use Supabase directly (for production)
+const useSupabase = () => {
+  return config.supabaseUrl && config.supabaseAnonKey && !import.meta.env.DEV;
+};
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -125,6 +133,14 @@ class ApiService {
 
   // Health check
   async healthCheck(): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.healthCheck();
+      return {
+        success: result.success,
+        data: result,
+        timestamp: result.timestamp
+      };
+    }
     return this.request('/health');
   }
 
@@ -171,8 +187,30 @@ class ApiService {
 
   // Articles
   async getArticles(filters: ArticleFilters = {}): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.getArticles({
+        limit: filters.limit,
+        offset: ((filters.page || 1) - 1) * (filters.limit || 10),
+        status: filters.status
+      });
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch articles' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
+
     const params = new URLSearchParams();
-    
+
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
@@ -185,7 +223,7 @@ class ApiService {
 
     const queryString = params.toString();
     const endpoint = `/articles${queryString ? `?${queryString}` : ''}`;
-    
+
     return this.request(endpoint);
   }
 

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onward Dominicans - News</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Configure Tailwind CSS
+      tailwind.config = {
+        darkMode: 'class', // Important: Enable class-based dark mode
+        theme: {
+          extend: {
+            // You can add custom theme extensions here if needed
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Example professional font */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* Correctly apply base and dark mode styles for body using Tailwind prefixes */
+        @apply bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200;
+      }
+
+      /* Custom scrollbar for a more polished look */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f0f0f0; /* Lighter track */
+      }
+      html.dark ::-webkit-scrollbar-track { /* Ensure specificity with html.dark */
+        background: #2d3748; /* Darker track for dark mode */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #a0a0a0; /* Softer thumb color */
+        border-radius: 4px;
+      }
+      html.dark ::-webkit-scrollbar-thumb { /* Ensure specificity with html.dark */
+        background: #718096; /* Adjusted thumb for dark mode */
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #888;
+      }
+      html.dark ::-webkit-scrollbar-thumb:hover { /* Ensure specificity with html.dark */
+        background: #a0aec0;
+      }
+
+      /* Basic fade-in animation class for sections */
+      .fade-in-section {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      }
+      .fade-in-section.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Hero Section Text Animations */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-fadeInUp {
+        animation: fadeInUp 0.8s ease-out forwards;
+        opacity: 0; /* Initial state before animation starts */
+      }
+
+      /* Delay classes for staggered animations */
+      .animation-delay-none { animation-delay: 0s; }
+      .animation-delay-100 { animation-delay: 0.1s; }
+      .animation-delay-200 { animation-delay: 0.2s; }
+      .animation-delay-300 { animation-delay: 0.3s; }
+      .animation-delay-400 { animation-delay: 0.4s; }
+      .animation-delay-500 { animation-delay: 0.5s; }
+      .animation-delay-600 { animation-delay: 0.6s; }
+      .animation-delay-700 { animation-delay: 0.7s; }
+      .animation-delay-800 { animation-delay: 0.8s; }
+      .animation-delay-900 { animation-delay: 0.9s; }
+      .animation-delay-1000 { animation-delay: 1s; }
+
+      /* Ensure prose dark mode works well with Tailwind */
+      /* This rule is fine, but components should prefer dark:prose-invert */
+      html.dark .prose-dark {
+        @apply prose-invert;
+      }
+
+      .prose-lg .link { @apply text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-500; }
+      .prose-lg strong { @apply dark:text-slate-100; }
+      .prose-lg h1, .prose-lg h2, .prose-lg h3, .prose-lg h4 { @apply dark:text-slate-100; }
+
+
+    </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.4.0"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/main-C-bQS7aL.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
