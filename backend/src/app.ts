@@ -48,6 +48,8 @@ app.use(helmet({
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
+    'https://odmailsu.vercel.app', // Production frontend
+    'http://localhost:5173', // Local development
     'http://localhost:5174', // Allow alternative port
     'http://localhost:5175', // Allow another alternative port
     'http://10.0.2.15:5173', // Allow network access
