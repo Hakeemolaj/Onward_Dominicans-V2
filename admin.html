@@ -680,9 +680,26 @@
             constructor() {
                 this.currentUser = null;
                 this.currentSection = 'dashboard';
-                // Force production API URL for admin panel
-                this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
+
+                // Smart API URL detection for admin panel
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const isLocalNetwork = window.location.hostname.startsWith('10.0.2.') || window.location.hostname.startsWith('192.168.');
+                const isVercelDomain = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('odmailsu');
+
+                if (isLocalhost || isLocalNetwork) {
+                    // Use local backend for development
+                    this.apiBase = `http://${window.location.hostname === '10.0.2.15' ? '10.0.2.15' : 'localhost'}:3001/api`;
+                } else if (isVercelDomain || window.location.protocol === 'https:') {
+                    // Use production backend for Vercel deployment or any HTTPS site
+                    this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
+                } else {
+                    // Fallback to production backend
+                    this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
+                }
+
                 console.log('🔧 Admin API Base URL:', this.apiBase);
+                console.log('🌐 Current hostname:', window.location.hostname);
+                console.log('🔒 Protocol:', window.location.protocol);
                 this.token = localStorage.getItem('admin-token');
                 this.articles = [];
                 this.authors = [];
