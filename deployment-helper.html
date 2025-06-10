@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onward Dominicans - Deployment Helper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .step h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .button.secondary {
+            background: #95a5a6;
+        }
+        
+        .button.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .url-box {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border: 1px solid #bdc3c7;
+        }
+        
+        .success {
+            background: #d5f4e6;
+            border-left-color: #27ae60;
+        }
+        
+        .warning {
+            background: #fef9e7;
+            border-left-color: #f39c12;
+        }
+        
+        .info {
+            background: #ebf3fd;
+            border-left-color: #3498db;
+        }
+        
+        .checklist {
+            list-style: none;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+            color: #3498db;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Deployment Helper</h1>
+            <p>Deploy Onward Dominicans for FREE in 3 simple steps</p>
+        </div>
+        
+        <div class="content">
+            <div class="step info">
+                <h3><span class="step-number">1</span>GitHub Setup</h3>
+                <p>First, let's get your code on GitHub:</p>
+                <ol>
+                    <li>Go to <a href="https://github.com/new" target="_blank">GitHub.com/new</a></li>
+                    <li>Create repository named: <code>Onward_Dominicans-V2</code></li>
+                    <li>Don't initialize with README</li>
+                    <li>Copy the repository URL</li>
+                    <li>Run the automated script in your terminal</li>
+                </ol>
+                <div class="url-box">
+                    Terminal command: <strong>./auto-deploy.sh</strong>
+                </div>
+                <a href="https://github.com/new" target="_blank" class="button">Create GitHub Repository</a>
+            </div>
+            
+            <div class="step warning">
+                <h3><span class="step-number">2</span>Backend Deployment (Render)</h3>
+                <p>Deploy your backend API to Render.com:</p>
+                <ul class="checklist">
+                    <li>Go to Render.com and sign up</li>
+                    <li>Click "New +" → "Web Service"</li>
+                    <li>Connect your GitHub repository</li>
+                    <li>Set Root Directory: <code>backend</code></li>
+                    <li>Build Command: <code>npm ci && npm run build</code></li>
+                    <li>Start Command: <code>npm start</code></li>
+                    <li>Add environment variables (see guide)</li>
+                    <li>Create PostgreSQL database</li>
+                </ul>
+                <a href="https://render.com" target="_blank" class="button">Deploy to Render</a>
+                <a href="./DEPLOY_FREE.md" target="_blank" class="button secondary">View Detailed Guide</a>
+            </div>
+            
+            <div class="step success">
+                <h3><span class="step-number">3</span>Frontend Deployment (Vercel)</h3>
+                <p>Deploy your frontend to Vercel:</p>
+                <ul class="checklist">
+                    <li>Go to Vercel.com and sign up</li>
+                    <li>Click "New Project"</li>
+                    <li>Import your GitHub repository</li>
+                    <li>Framework: <code>Vite</code></li>
+                    <li>Build Command: <code>npm run build</code></li>
+                    <li>Output Directory: <code>dist</code></li>
+                    <li>Add environment variable: <code>VITE_API_URL</code></li>
+                </ul>
+                <a href="https://vercel.com" target="_blank" class="button">Deploy to Vercel</a>
+            </div>
+            
+            <div class="step info">
+                <h3>🎉 Your Live URLs</h3>
+                <p>After deployment, your app will be available at:</p>
+                <div class="url-box">
+                    <strong>Frontend:</strong> https://onward-dominicans.vercel.app<br>
+                    <strong>Admin Panel:</strong> https://onward-dominicans.vercel.app/admin.html<br>
+                    <strong>Backend API:</strong> https://onward-dominicans-backend.onrender.com/api
+                </div>
+            </div>
+            
+            <div class="step warning">
+                <h3>💡 Pro Tips</h3>
+                <ul>
+                    <li><strong>Free Forever:</strong> Both services offer permanent free tiers</li>
+                    <li><strong>Custom Domains:</strong> You can add your own domain for free</li>
+                    <li><strong>Keep-Alive:</strong> Run <code>npm run keep-alive</code> to prevent backend sleeping</li>
+                    <li><strong>Database:</strong> Renew free PostgreSQL every 90 days</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🌟 Total Cost: $0/month | 🚀 Deployment Time: ~15 minutes</p>
+        </div>
+    </div>
+</body>
+</html>
