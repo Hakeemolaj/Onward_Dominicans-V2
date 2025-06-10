@@ -682,8 +682,13 @@
                 this.currentSection = 'dashboard';
                 // Auto-detect API base URL based on current hostname
                 const currentHost = window.location.hostname;
-                const apiHost = currentHost === 'localhost' || currentHost === '127.0.0.1' ? 'localhost' : currentHost;
-                this.apiBase = `http://${apiHost}:3001/api`;
+                if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                    // Local development
+                    this.apiBase = 'http://localhost:3001/api';
+                } else {
+                    // Production - use the deployed backend
+                    this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
+                }
                 this.token = localStorage.getItem('admin-token');
                 this.articles = [];
                 this.authors = [];
