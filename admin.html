@@ -1668,14 +1668,13 @@
 
             async loadArticles() {
                 try {
-                    console.log('🔄 Loading articles from backend...');
-                    const timestamp = Date.now();
+                    console.log('🔄 Loading articles from Supabase...');
                     // Admin should see ALL articles (including drafts), not just published ones
-                    const response = await this.makeAPICall(`/articles?limit=50&includeAll=true&_t=${timestamp}`);
-                    console.log('📊 Articles API response:', response);
+                    const response = await this.getArticlesFromSupabase();
+                    console.log('📊 Articles Supabase response:', response);
 
                     this.articles = response.data || [];
-                    console.log(`✅ Loaded ${this.articles.length} articles from backend (including drafts)`);
+                    console.log(`✅ Loaded ${this.articles.length} articles from Supabase (including drafts)`);
 
                     const mainContent = document.getElementById('main-content');
                     mainContent.innerHTML = `
