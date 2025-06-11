@@ -131,4 +131,38 @@ router.post('/fix-admin', async (req: Request, res: Response, next: NextFunction
   }
 });
 
+// List users endpoint (for debugging)
+router.get('/users', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { db } = await import('../services/database');
+
+    const users = await db.executeWithRetry(() =>
+      db.prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          isActive: true,
+          createdAt: true
+        }
+      })
+    );
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        users: users,
+        count: users.length,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ List users failed:', error);
+    next(error);
+  }
+});
+
 export default router;
