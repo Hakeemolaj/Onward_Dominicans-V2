@@ -176,13 +176,12 @@ export const rawSqlFallbacks = {
   },
 
   async findUserByEmail(email: string): Promise<any> {
+    console.log('🔍 Looking for user with email:', email);
+
     try {
-      // Try using Prisma's findUnique first (safer)
-      const user = await db.prisma.user.findFirst({
-        where: {
-          email: email,
-          isActive: true
-        },
+      // First try to find user without isActive filter to see if user exists
+      const userExists = await db.prisma.user.findFirst({
+        where: { email: email },
         select: {
           id: true,
           email: true,
@@ -190,18 +189,48 @@ export const rawSqlFallbacks = {
           firstName: true,
           lastName: true,
           role: true,
-          password: true, // Needed for login verification
+          isActive: true,
+          password: true,
           createdAt: true,
           updatedAt: true
         }
       });
-      return user;
+
+      console.log('👤 User exists check:', userExists ? `Found ${userExists.email} (active: ${userExists.isActive})` : 'Not found');
+
+      if (!userExists) {
+        console.log('❌ User not found in database');
+        return null;
+      }
+
+      if (!userExists.isActive) {
+        console.log('❌ User found but not active');
+        return null;
+      }
+
+      console.log('✅ User found and active');
+      return userExists;
+
     } catch (error: any) {
-      // Fallback to raw SQL if Prisma fails
-      console.log('🔄 Prisma findFirst failed, using raw SQL fallback');
-      const query = 'SELECT * FROM users WHERE email = $1 AND "isActive" = true';
-      const result = await db.prisma.$queryRawUnsafe<any[]>(query, email);
-      return result[0] || null;
+      console.log('🔄 Prisma findFirst failed, using raw SQL fallback:', error.message);
+
+      try {
+        // Fallback to raw SQL if Prisma fails
+        const query = 'SELECT * FROM users WHERE email = $1';
+        const result = await db.prisma.$queryRawUnsafe<any[]>(query, email);
+        const user = result[0] || null;
+
+        console.log('🔍 Raw SQL result:', user ? `Found ${user.email} (active: ${user.isActive})` : 'Not found');
+
+        if (!user || !user.isActive) {
+          return null;
+        }
+
+        return user;
+      } catch (rawError: any) {
+        console.error('❌ Raw SQL fallback also failed:', rawError.message);
+        return null;
+      }
     }
   },
 
