@@ -17,9 +17,9 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Check if we should use Supabase directly (for production)
+// Check if we should use Supabase directly (for both development and production)
 const useSupabase = () => {
-  return config.supabaseUrl && config.supabaseAnonKey && !import.meta.env.DEV;
+  return config.supabaseUrl && config.supabaseAnonKey;
 };
 
 export interface ApiResponse<T = any> {
@@ -252,6 +252,29 @@ class ApiService {
   }
 
   async getFeaturedArticle(): Promise<ApiResponse> {
+    if (useSupabase()) {
+      // For Supabase, get the most recent published article as featured
+      const result = await supabaseService.getArticles({
+        limit: 1,
+        offset: 0,
+        status: 'PUBLISHED'
+      });
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch featured article' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const article = result.data && result.data.length > 0 ? result.data[0] : null;
+      return {
+        success: true,
+        data: article,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/articles/featured/current');
   }
 
@@ -356,6 +379,23 @@ class ApiService {
 
   // Authors
   async getAuthors(): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.getAuthors();
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch authors' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/authors');
   }
 
@@ -385,6 +425,23 @@ class ApiService {
 
   // Categories
   async getCategories(): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.getCategories();
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch categories' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/categories');
   }
 
