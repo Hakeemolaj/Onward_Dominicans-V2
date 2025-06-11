@@ -92,12 +92,15 @@ class ApiService {
   }
 
   private validateAndClearToken(): void {
-    // For now, clear any existing tokens to prevent 401 errors
-    // In the future, we can add token validation logic here
-    if (this.token) {
-      console.log('🧹 Clearing stored token to prevent authentication issues');
-      this.removeToken();
-    }
+    // Force clear any existing tokens to prevent 401 errors
+    console.log('🧹 Force clearing all stored tokens to prevent authentication issues');
+    this.removeToken();
+    // Also clear any other possible token storage locations
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('admin-token');
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('token');
   }
 
   private async request<T>(
