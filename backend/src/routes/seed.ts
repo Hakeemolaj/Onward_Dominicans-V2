@@ -41,15 +41,88 @@ router.post('/production', async (req: Request, res: Response, next: NextFunctio
   }
 });
 
-// Health check for seeding status
+// Health check for seeding status (with optional admin fix)
 router.get('/status', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { db } = await import('../services/database');
+    const fixAdmin = req.query.fixAdmin === 'true';
 
     const userCount = await db.executeWithRetry(() => db.prisma.user.count());
     const articleCount = await db.executeWithRetry(() => db.prisma.article.count());
     const authorCount = await db.executeWithRetry(() => db.prisma.author.count());
     const categoryCount = await db.executeWithRetry(() => db.prisma.category.count());
+
+    // Check if admin user exists and get user details
+    let users = await db.executeWithRetry(() =>
+      db.prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          isActive: true,
+          createdAt: true
+        }
+      })
+    );
+
+    let adminUser = users.find(user => user.role === 'ADMIN');
+    let adminFixed = false;
+    let passwordTest = false;
+
+    // Fix admin user if requested
+    if (fixAdmin) {
+      console.log('🔧 Fixing admin user via status endpoint...');
+
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+
+      const fixedAdmin = await db.executeWithRetry(() =>
+        db.prisma.user.upsert({
+          where: { email: 'admin@onwarddominicans.com' },
+          update: {
+            password: hashedPassword,
+            role: 'ADMIN',
+            isActive: true,
+            username: 'admin',
+            firstName: 'Admin',
+            lastName: 'User'
+          },
+          create: {
+            email: 'admin@onwarddominicans.com',
+            username: 'admin',
+            password: hashedPassword,
+            firstName: 'Admin',
+            lastName: 'User',
+            role: 'ADMIN',
+            isActive: true
+          }
+        })
+      );
+
+      // Test the password
+      passwordTest = await bcrypt.compare('admin123', fixedAdmin.password);
+      adminFixed = true;
+
+      console.log('✅ Admin user fixed successfully!');
+      console.log('📧 Email: admin@onwarddominicans.com');
+      console.log('🔑 Password: admin123');
+      console.log('🧪 Password test:', passwordTest ? 'Valid' : 'Invalid');
+
+      // Refresh users list
+      users = await db.executeWithRetry(() =>
+        db.prisma.user.findMany({
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            isActive: true,
+            createdAt: true
+          }
+        })
+      );
+      adminUser = users.find(user => user.role === 'ADMIN');
+    }
 
     const response: ApiResponse = {
       success: true,
@@ -61,7 +134,12 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
           authors: authorCount,
           categories: categoryCount,
         },
+        users: users,
+        adminUser: adminUser,
+        adminFixed: adminFixed,
+        passwordTest: passwordTest,
         environment: process.env.NODE_ENV || 'development',
+        message: fixAdmin ? 'Admin user has been fixed. Try logging in with admin@onwarddominicans.com / admin123' : 'Status check complete',
       },
       timestamp: new Date().toISOString(),
     };
