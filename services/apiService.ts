@@ -28,10 +28,11 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Force all requests to go through backend API for consistency
-// This ensures both admin and frontend use the same data source
+// Use Supabase as fallback when backend is not available
+// This ensures the frontend always works even if backend is down
 const useSupabase = () => {
-  return false; // Always use backend API
+  // For now, use Supabase directly since backend is having issues
+  return true; // Use Supabase fallback
 };
 
 export interface ApiResponse<T = any> {
