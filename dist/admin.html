@@ -52,7 +52,7 @@
       /* Line clamp utility */
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
-  <link rel="stylesheet" crossorigin href="/assets/index-BybtzMQ6.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-DPxzBI56.css">
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
     <!-- Toast Notifications -->
@@ -504,6 +504,88 @@
         </div>
     </div>
 
+    <!-- Category Editor Modal -->
+    <div id="category-editor-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                <h2 id="category-editor-modal-title" class="text-2xl font-bold text-slate-800 dark:text-slate-200">Add Category</h2>
+                <button onclick="adminDashboard.closeCategoryEditor()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto">
+                <form id="category-editor-form" class="p-6 space-y-6">
+                    <!-- Name -->
+                    <div>
+                        <label for="category-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Category Name *</label>
+                        <input type="text" id="category-name" name="name" required
+                            class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-lg font-semibold"
+                            placeholder="e.g., News, Sports, Opinion"
+                            oninput="adminDashboard.updateSlugFromName(this.value)">
+                    </div>
+
+                    <!-- Slug -->
+                    <div>
+                        <label for="category-slug" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">URL Slug</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-slate-500 dark:text-slate-400">/</span>
+                            <input type="text" id="category-slug" name="slug"
+                                class="w-full pl-8 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                placeholder="auto-generated from name">
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Leave empty to auto-generate from name</p>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="category-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                        <textarea id="category-description" name="description" rows="3"
+                            class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                            placeholder="Brief description of this category..."></textarea>
+                    </div>
+
+                    <!-- Color -->
+                    <div>
+                        <label for="category-color" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Category Color</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="color" id="category-color" name="color" value="#6B7280"
+                                class="w-16 h-12 border border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer"
+                                onchange="adminDashboard.updateColorText(this.value)">
+                            <input type="text" id="category-color-text" value="#6B7280"
+                                class="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono"
+                                placeholder="#6B7280"
+                                onchange="adminDashboard.updateColorPicker(this.value)">
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Used for category badges and theming</p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
+                <div class="flex items-center space-x-4">
+                    <span id="category-save-status" class="text-sm text-slate-600 dark:text-slate-400"></span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button type="button" onclick="adminDashboard.closeCategoryEditor()"
+                        class="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="adminDashboard.saveCategoryForm()"
+                        class="px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg btn-primary flex items-center space-x-2">
+                        <span id="category-save-btn-text">Save Category</span>
+                        <div id="category-save-spinner" class="hidden spinner"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Admin Dashboard Container -->
     <div id="admin-app" class="min-h-screen">
         <!-- Login Screen -->
@@ -522,7 +604,7 @@
                         <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email Address</label>
                         <input type="email" id="email" name="email" required
                             class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            placeholder="admin@onwarddominicans.news">
+                            placeholder="admin@onwarddominicans.com">
                     </div>
                     
                     <div>
@@ -681,7 +763,12 @@
                     this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
                 }
 
+                // Supabase configuration for fallback
+                this.supabaseUrl = 'https://zrsfmghkjhxkjjzkigck.supabase.co';
+                this.supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM';
+
                 console.log('🔧 Admin API Base URL:', this.apiBase);
+                console.log('🔧 Supabase Fallback URL:', this.supabaseUrl);
                 console.log('🌐 Current hostname:', window.location.hostname);
                 console.log('🔒 Protocol:', window.location.protocol);
                 this.token = localStorage.getItem('admin-token');
@@ -694,6 +781,7 @@
                 this.featuredArticle = null;
                 this.currentEditingArticle = null;
                 this.currentEditingAuthor = null;
+                this.currentEditingCategory = null;
                 this.currentEditingGalleryItem = null;
                 this.currentEditingGalleryCategory = null;
                 this.init();
@@ -862,7 +950,12 @@
 
                 const options = {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
                 };
 
                 if (this.token) {
@@ -892,6 +985,48 @@
                 } catch (error) {
                     console.error('❌ API Call failed:', error);
                     throw error;
+                }
+            }
+
+            // Supabase fallback for articles when backend fails or returns insufficient data
+            async getArticlesFromSupabase() {
+                try {
+                    console.log('🔄 Fetching articles from Supabase fallback...');
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/articles?select=*,author:authors(*),category:categories(*),tags(*)&order=createdAt.desc`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Supabase request failed: ${response.status}`);
+                    }
+
+                    const articles = await response.json();
+                    console.log(`✅ Loaded ${articles.length} articles from Supabase`);
+
+                    return {
+                        success: true,
+                        data: articles,
+                        meta: {
+                            total: articles.length,
+                            page: 1,
+                            limit: articles.length,
+                            totalPages: 1,
+                            hasNext: false,
+                            hasPrev: false
+                        }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase fallback failed:', error);
+                    return {
+                        success: false,
+                        data: [],
+                        error: { message: error.message }
+                    };
                 }
             }
 
@@ -990,21 +1125,24 @@
 
                     // Load stats with cache busting
                     const timestamp = Date.now();
-                    const [articlesResponse, authorsResponse, featuredResponse] = await Promise.all([
-                        this.makeAPICall(`/articles?limit=5&_t=${timestamp}`),
+                    const [articlesResponse, authorsResponse, categoriesResponse, featuredResponse] = await Promise.all([
+                        this.makeAPICall(`/articles?limit=5&includeAll=true&_t=${timestamp}`),
                         this.makeAPICall(`/authors?limit=10&_t=${timestamp}`),
+                        this.makeAPICall(`/categories?limit=50&_t=${timestamp}`),
                         this.makeAPICall(`/articles/featured/current?_t=${timestamp}`)
                     ]);
 
                     console.log('📊 Articles response:', articlesResponse);
                     console.log('👥 Authors response:', authorsResponse);
+                    console.log('🏷️ Categories response:', categoriesResponse);
                     console.log('⭐ Featured article response:', featuredResponse);
 
                     this.articles = articlesResponse.data || [];
                     this.authors = authorsResponse.data || [];
+                    this.categories = categoriesResponse.data || [];
                     this.featuredArticle = featuredResponse.success ? featuredResponse.data : null;
 
-                    console.log(`✅ Loaded ${this.articles.length} articles and ${this.authors.length} authors from backend`);
+                    console.log(`✅ Loaded ${this.articles.length} articles, ${this.authors.length} authors, and ${this.categories.length} categories from backend`);
                     console.log(`⭐ Featured article:`, this.featuredArticle?.title || 'None');
 
                     // Update article count in sidebar
@@ -1016,7 +1154,7 @@
                             <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-200">Dashboard</h2>
                             <p class="text-slate-600 dark:text-slate-400 mt-2">Welcome back! Here's what's happening with your news site.</p>
                             <div class="mt-2 text-sm text-green-600 dark:text-green-400">
-                                ✅ Data loaded from backend API (${this.articles.length} articles, ${this.authors.length} authors)
+                                ✅ Data loaded from backend API (${this.articles.length} articles, ${this.authors.length} authors, ${this.categories.length} categories)
                             </div>
                         </div>
 
@@ -1213,11 +1351,12 @@
                 try {
                     console.log('🔄 Loading articles from backend...');
                     const timestamp = Date.now();
-                    const response = await this.makeAPICall(`/articles?limit=50&_t=${timestamp}`);
+                    // Admin should see ALL articles (including drafts), not just published ones
+                    const response = await this.makeAPICall(`/articles?limit=50&includeAll=true&_t=${timestamp}`);
                     console.log('📊 Articles API response:', response);
 
                     this.articles = response.data || [];
-                    console.log(`✅ Loaded ${this.articles.length} articles from backend`);
+                    console.log(`✅ Loaded ${this.articles.length} articles from backend (including drafts)`);
 
                     const mainContent = document.getElementById('main-content');
                     mainContent.innerHTML = `
@@ -2036,13 +2175,268 @@
             }
 
             async loadCategories() {
-                const mainContent = document.getElementById('main-content');
-                mainContent.innerHTML = `
-                    <div class="text-center py-12">
-                        <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">Categories Management</h2>
-                        <p class="text-slate-600 dark:text-slate-400">Category management feature coming soon!</p>
-                    </div>
-                `;
+                try {
+                    console.log('📂 Loading categories...');
+
+                    // Fetch categories from API
+                    const response = await this.makeAPICall('/categories');
+                    this.categories = response.data || [];
+
+                    console.log(`✅ Loaded ${this.categories.length} categories`);
+
+                    const mainContent = document.getElementById('main-content');
+                    mainContent.innerHTML = `
+                        <div class="mb-8 flex items-center justify-between">
+                            <div>
+                                <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-200">Categories Management</h2>
+                                <p class="text-slate-600 dark:text-slate-400 mt-2">Organize your articles with categories.</p>
+                                <div class="mt-2 text-sm text-green-600 dark:text-green-400">
+                                    ✅ Data loaded from backend API (${this.categories.length} categories)
+                                </div>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button onclick="adminDashboard.createCategory()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg btn-primary flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <span>Add Category</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 shadow-sm rounded-lg border border-slate-200 dark:border-slate-700">
+                            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100">All Categories</h3>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="relative">
+                                            <input type="text" id="category-search" placeholder="Search categories..."
+                                                   class="pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                   oninput="adminDashboard.filterCategories(this.value)">
+                                            <svg class="absolute left-3 top-2.5 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <div id="categories-grid">
+                                    ${this.categories.length > 0 ? `
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            ${this.categories.map(category => `
+                                                <div class="category-card bg-slate-50 dark:bg-slate-700 rounded-lg p-6 border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow">
+                                                    <div class="flex items-center space-x-3 mb-4">
+                                                        <div class="w-6 h-6 rounded-full flex-shrink-0" style="background-color: ${category.color || '#6B7280'}"></div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <h4 class="text-lg font-medium text-slate-900 dark:text-slate-100 truncate">${category.name}</h4>
+                                                            <p class="text-sm text-slate-500 dark:text-slate-400 truncate">/${category.slug}</p>
+                                                        </div>
+                                                    </div>
+                                                    ${category.description ? `<p class="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">${category.description}</p>` : ''}
+                                                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                                        <span>${category._count?.articles || 0} articles</span>
+                                                        <div class="flex space-x-2">
+                                                            <button onclick="adminDashboard.editCategory('${category.id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">Edit</button>
+                                                            <button onclick="adminDashboard.deleteCategory('${category.id}', '${category.name}')" class="text-red-600 hover:text-red-800 dark:text-red-400 font-medium">Delete</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-12">
+                                            <div class="text-slate-400 dark:text-slate-500 text-6xl mb-4">🏷️</div>
+                                            <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No categories yet</h3>
+                                            <p class="text-slate-500 dark:text-slate-400 mb-6">Create categories to organize your articles</p>
+                                            <button onclick="adminDashboard.createCategory()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg">Create First Category</button>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Error loading categories:', error);
+                    this.showToast('Error loading categories', 'error');
+                }
+            }
+
+            // Category Management Methods
+            async createCategory() {
+                console.log('🆕 Opening category creation modal...');
+                this.currentEditingCategory = null;
+                this.openCategoryEditor(null);
+            }
+
+            async editCategory(categoryId) {
+                console.log('✏️ Opening category edit modal for:', categoryId);
+                const category = this.categories.find(c => c.id === categoryId);
+                if (category) {
+                    console.log('📋 Found category data:', category);
+                    this.currentEditingCategory = category;
+                    this.openCategoryEditor(category);
+                } else {
+                    console.error('❌ Category not found in local data:', categoryId);
+                    this.showToast('Category not found', 'error');
+                }
+            }
+
+            async deleteCategory(categoryId, categoryName) {
+                if (confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+                    try {
+                        console.log('🗑️ Deleting category:', categoryId);
+                        await this.makeAPICall(`/categories/${categoryId}`, 'DELETE');
+                        this.showToast('Category deleted successfully', 'success');
+                        await this.loadCategories(); // Reload the list
+                    } catch (error) {
+                        console.error('Error deleting category:', error);
+                        this.showToast('Error deleting category', 'error');
+                    }
+                }
+            }
+
+            filterCategories(searchTerm) {
+                const cards = document.querySelectorAll('.category-card');
+                const lowerSearchTerm = searchTerm.toLowerCase();
+
+                cards.forEach(card => {
+                    const categoryName = card.querySelector('h4').textContent.toLowerCase();
+                    const categorySlug = card.querySelector('p').textContent.toLowerCase();
+                    const categoryDescription = card.querySelector('.line-clamp-3')?.textContent?.toLowerCase() || '';
+
+                    const matches = categoryName.includes(lowerSearchTerm) ||
+                                  categorySlug.includes(lowerSearchTerm) ||
+                                  categoryDescription.includes(lowerSearchTerm);
+
+                    card.style.display = matches ? 'block' : 'none';
+                });
+            }
+
+            openCategoryEditor(category = null) {
+                const modal = document.getElementById('category-editor-modal');
+                const title = document.getElementById('category-editor-modal-title');
+                const form = document.getElementById('category-editor-form');
+
+                // Set modal title
+                title.textContent = category ? 'Edit Category' : 'Add Category';
+
+                // Show modal first
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                // Wait a moment for DOM to be ready, then populate form
+                setTimeout(() => {
+                    if (category) {
+                        console.log('📝 Populating form with category data:', category);
+                        this.populateCategoryForm(category);
+                    } else {
+                        console.log('🆕 Setting up form for new category');
+                        form.reset();
+                        const colorField = document.getElementById('category-color');
+                        const colorTextField = document.getElementById('category-color-text');
+                        if (colorField) colorField.value = '#6B7280';
+                        if (colorTextField) colorTextField.value = '#6B7280';
+                    }
+
+                    // Focus on the name field
+                    const nameField = document.getElementById('category-name');
+                    if (nameField) nameField.focus();
+                }, 150);
+            }
+
+            populateCategoryForm(category) {
+                console.log('🔧 Populating category form with:', category);
+
+                // Get form elements
+                const nameField = document.getElementById('category-name');
+                const slugField = document.getElementById('category-slug');
+                const descriptionField = document.getElementById('category-description');
+                const colorField = document.getElementById('category-color');
+                const colorTextField = document.getElementById('category-color-text');
+
+                // Check if elements exist
+                if (!nameField || !slugField || !descriptionField || !colorField || !colorTextField) {
+                    console.error('❌ Category form elements not found in DOM');
+                    return;
+                }
+
+                // Populate fields
+                nameField.value = category.name || '';
+                slugField.value = category.slug || '';
+                descriptionField.value = category.description || '';
+                colorField.value = category.color || '#6B7280';
+                colorTextField.value = category.color || '#6B7280';
+
+                // Store the original name for slug generation
+                slugField.dataset.previousName = category.name || '';
+
+                console.log('✅ Category form populated successfully');
+            }
+
+            closeCategoryEditor() {
+                const modal = document.getElementById('category-editor-modal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                this.currentEditingCategory = null;
+            }
+
+            generateSlug(name) {
+                return name
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+
+            async saveCategoryForm() {
+                const form = document.getElementById('category-editor-form');
+                const formData = new FormData(form);
+
+                const categoryData = {
+                    name: formData.get('name'),
+                    slug: formData.get('slug') || this.generateSlug(formData.get('name')),
+                    description: formData.get('description'),
+                    color: formData.get('color')
+                };
+
+                try {
+                    if (this.currentEditingCategory) {
+                        // Update existing category
+                        console.log('💾 Updating category:', this.currentEditingCategory.id);
+                        await this.makeAPICall(`/categories/${this.currentEditingCategory.id}`, 'PUT', categoryData);
+                        this.showToast('Category updated successfully', 'success');
+                    } else {
+                        // Create new category
+                        console.log('💾 Creating new category');
+                        await this.makeAPICall('/categories', 'POST', categoryData);
+                        this.showToast('Category created successfully', 'success');
+                    }
+
+                    this.closeCategoryEditor();
+                    await this.loadCategories(); // Reload the list
+                } catch (error) {
+                    console.error('Error saving category:', error);
+                    this.showToast('Error saving category', 'error');
+                }
+            }
+
+            // Category Editor Helper Methods
+            updateSlugFromName(name) {
+                const slugField = document.getElementById('category-slug');
+                if (!slugField.value || slugField.value === this.generateSlug(slugField.dataset.previousName || '')) {
+                    slugField.value = this.generateSlug(name);
+                }
+                slugField.dataset.previousName = name;
+            }
+
+            updateColorText(color) {
+                document.getElementById('category-color-text').value = color;
+            }
+
+            updateColorPicker(color) {
+                if (/^#[0-9A-F]{6}$/i.test(color)) {
+                    document.getElementById('category-color').value = color;
+                }
             }
 
             async loadAnalytics() {

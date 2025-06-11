@@ -11,15 +11,27 @@ const getApiBaseUrl = () => {
   }
 
   const currentHost = window.location.hostname;
-  const apiHost = currentHost === 'localhost' || currentHost === '127.0.0.1' ? 'localhost' : currentHost;
-  return `http://${apiHost}:3001/api`;
+
+  // Check if we're in development (localhost)
+  if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+    return 'http://localhost:3001/api';
+  }
+
+  // Check if we're on Vercel or production
+  if (currentHost.includes('vercel.app') || currentHost.includes('odmailsu') || window.location.protocol === 'https:') {
+    return 'https://onward-dominicans-backend-v2.onrender.com/api';
+  }
+
+  // Fallback to production backend
+  return 'https://onward-dominicans-backend-v2.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Check if we should use Supabase directly (for both development and production)
+// Force all requests to go through backend API for consistency
+// This ensures both admin and frontend use the same data source
 const useSupabase = () => {
-  return config.supabaseUrl && config.supabaseAnonKey;
+  return false; // Always use backend API
 };
 
 export interface ApiResponse<T = any> {

@@ -763,7 +763,12 @@
                     this.apiBase = 'https://onward-dominicans-backend-v2.onrender.com/api';
                 }
 
+                // Supabase configuration for fallback
+                this.supabaseUrl = 'https://zrsfmghkjhxkjjzkigck.supabase.co';
+                this.supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM';
+
                 console.log('🔧 Admin API Base URL:', this.apiBase);
+                console.log('🔧 Supabase Fallback URL:', this.supabaseUrl);
                 console.log('🌐 Current hostname:', window.location.hostname);
                 console.log('🔒 Protocol:', window.location.protocol);
                 this.token = localStorage.getItem('admin-token');
@@ -945,7 +950,12 @@
 
                 const options = {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
                 };
 
                 if (this.token) {
@@ -975,6 +985,48 @@
                 } catch (error) {
                     console.error('❌ API Call failed:', error);
                     throw error;
+                }
+            }
+
+            // Supabase fallback for articles when backend fails or returns insufficient data
+            async getArticlesFromSupabase() {
+                try {
+                    console.log('🔄 Fetching articles from Supabase fallback...');
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/articles?select=*,author:authors(*),category:categories(*),tags(*)&order=createdAt.desc`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Supabase request failed: ${response.status}`);
+                    }
+
+                    const articles = await response.json();
+                    console.log(`✅ Loaded ${articles.length} articles from Supabase`);
+
+                    return {
+                        success: true,
+                        data: articles,
+                        meta: {
+                            total: articles.length,
+                            page: 1,
+                            limit: articles.length,
+                            totalPages: 1,
+                            hasNext: false,
+                            hasPrev: false
+                        }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase fallback failed:', error);
+                    return {
+                        success: false,
+                        data: [],
+                        error: { message: error.message }
+                    };
                 }
             }
 
@@ -1074,7 +1126,7 @@
                     // Load stats with cache busting
                     const timestamp = Date.now();
                     const [articlesResponse, authorsResponse, categoriesResponse, featuredResponse] = await Promise.all([
-                        this.makeAPICall(`/articles?limit=5&_t=${timestamp}`),
+                        this.makeAPICall(`/articles?limit=5&includeAll=true&_t=${timestamp}`),
                         this.makeAPICall(`/authors?limit=10&_t=${timestamp}`),
                         this.makeAPICall(`/categories?limit=50&_t=${timestamp}`),
                         this.makeAPICall(`/articles/featured/current?_t=${timestamp}`)
@@ -1299,11 +1351,12 @@
                 try {
                     console.log('🔄 Loading articles from backend...');
                     const timestamp = Date.now();
-                    const response = await this.makeAPICall(`/articles?limit=50&_t=${timestamp}`);
+                    // Admin should see ALL articles (including drafts), not just published ones
+                    const response = await this.makeAPICall(`/articles?limit=50&includeAll=true&_t=${timestamp}`);
                     console.log('📊 Articles API response:', response);
 
                     this.articles = response.data || [];
-                    console.log(`✅ Loaded ${this.articles.length} articles from backend`);
+                    console.log(`✅ Loaded ${this.articles.length} articles from backend (including drafts)`);
 
                     const mainContent = document.getElementById('main-content');
                     mainContent.innerHTML = `
