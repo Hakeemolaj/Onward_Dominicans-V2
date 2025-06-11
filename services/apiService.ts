@@ -73,6 +73,8 @@ class ApiService {
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
     this.loadToken();
+    // Clear any invalid tokens on initialization
+    this.validateAndClearToken();
   }
 
   private loadToken(): void {
@@ -89,9 +91,19 @@ class ApiService {
     localStorage.removeItem('auth_token');
   }
 
+  private validateAndClearToken(): void {
+    // For now, clear any existing tokens to prevent 401 errors
+    // In the future, we can add token validation logic here
+    if (this.token) {
+      console.log('🧹 Clearing stored token to prevent authentication issues');
+      this.removeToken();
+    }
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    requireAuth: boolean = false
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const method = options.method || 'GET';
@@ -112,7 +124,8 @@ class ApiService {
       ...options.headers,
     };
 
-    if (this.token) {
+    // Only add Authorization header if explicitly required or for protected endpoints
+    if (requireAuth && this.token) {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
@@ -153,7 +166,7 @@ class ApiService {
         timestamp: result.timestamp
       };
     }
-    return this.request('/health');
+    return this.request('/health', {}, false); // Public endpoint
   }
 
   // Authentication
@@ -161,7 +174,7 @@ class ApiService {
     const response = await this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    });
+    }, false); // Login doesn't require existing auth
 
     if (response.success && response.data?.token) {
       this.saveToken(response.data.token);
@@ -190,7 +203,7 @@ class ApiService {
   }
 
   async getProfile(): Promise<ApiResponse> {
-    return this.request('/auth/profile');
+    return this.request('/auth/profile', {}, true); // Requires authentication
   }
 
   logout(): void {
@@ -236,18 +249,18 @@ class ApiService {
     const queryString = params.toString();
     const endpoint = `/articles${queryString ? `?${queryString}` : ''}`;
 
-    return this.request(endpoint);
+    return this.request(endpoint, {}, false); // Public endpoint
   }
 
   async getArticle(id: string): Promise<ApiResponse> {
-    return this.request(`/articles/${id}`);
+    return this.request(`/articles/${id}`, {}, false); // Public endpoint
   }
 
   async createArticle(articleData: any): Promise<ApiResponse> {
     return this.request('/articles', {
       method: 'POST',
       body: JSON.stringify(articleData),
-    });
+    }, true); // Requires authentication
   }
 
   async updateArticle(id: string, articleData: any): Promise<ApiResponse> {
@@ -287,7 +300,7 @@ class ApiService {
         timestamp: new Date().toISOString()
       };
     }
-    return this.request('/articles/featured/current');
+    return this.request('/articles/featured/current', {}, false); // Public endpoint
   }
 
   async setFeaturedArticle(id: string): Promise<ApiResponse> {
@@ -408,11 +421,11 @@ class ApiService {
         timestamp: new Date().toISOString()
       };
     }
-    return this.request('/authors');
+    return this.request('/authors', {}, false); // Public endpoint
   }
 
   async getAuthor(id: string): Promise<ApiResponse> {
-    return this.request(`/authors/${id}`);
+    return this.request(`/authors/${id}`, {}, false); // Public endpoint
   }
 
   async createAuthor(authorData: any): Promise<ApiResponse> {
