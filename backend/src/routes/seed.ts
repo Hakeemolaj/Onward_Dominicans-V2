@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcryptjs';
 import { seedDatabase } from '../utils/seedProduction';
 import { ApiResponse } from '../types';
 
@@ -67,6 +68,65 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
 
     res.json(response);
   } catch (error) {
+    next(error);
+  }
+});
+
+// Fix admin user endpoint
+router.post('/fix-admin', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { db } = await import('../services/database');
+
+    console.log('🔧 Fixing admin user...');
+
+    // Find existing admin or create new one
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+
+    const adminUser = await db.executeWithRetry(() =>
+      db.prisma.user.upsert({
+        where: { email: 'admin@onwarddominicans.com' },
+        update: {
+          password: hashedPassword,
+          role: 'ADMIN',
+          isActive: true,
+          username: 'admin',
+          firstName: 'Admin',
+          lastName: 'User'
+        },
+        create: {
+          email: 'admin@onwarddominicans.com',
+          username: 'admin',
+          password: hashedPassword,
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'ADMIN',
+          isActive: true
+        }
+      })
+    );
+
+    // Test the password
+    const isValidPassword = await bcrypt.compare('admin123', adminUser.password);
+
+    console.log('✅ Admin user fixed successfully!');
+    console.log('📧 Email: admin@onwarddominicans.com');
+    console.log('🔑 Password: admin123');
+    console.log('🧪 Password test:', isValidPassword ? 'Valid' : 'Invalid');
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Admin user fixed successfully',
+        email: 'admin@onwarddominicans.com',
+        passwordTest: isValidPassword,
+        timestamp: new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Fix admin failed:', error);
     next(error);
   }
 });
