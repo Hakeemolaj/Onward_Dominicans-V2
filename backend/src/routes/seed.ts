@@ -74,10 +74,11 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
     if (fixAdmin) {
       console.log('🔧 Fixing admin user via status endpoint...');
 
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      try {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
 
-      const fixedAdmin = await db.executeWithRetry(() =>
-        db.prisma.user.upsert({
+        // Use direct Prisma connection without retry wrapper
+        const fixedAdmin = await db.prisma.user.upsert({
           where: { email: 'admin@onwarddominicans.com' },
           update: {
             password: hashedPassword,
@@ -96,21 +97,19 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
             role: 'ADMIN',
             isActive: true
           }
-        })
-      );
+        });
 
-      // Test the password
-      passwordTest = await bcrypt.compare('admin123', fixedAdmin.password);
-      adminFixed = true;
+        // Test the password
+        passwordTest = await bcrypt.compare('admin123', fixedAdmin.password);
+        adminFixed = true;
 
-      console.log('✅ Admin user fixed successfully!');
-      console.log('📧 Email: admin@onwarddominicans.com');
-      console.log('🔑 Password: admin123');
-      console.log('🧪 Password test:', passwordTest ? 'Valid' : 'Invalid');
+        console.log('✅ Admin user fixed successfully!');
+        console.log('📧 Email: admin@onwarddominicans.com');
+        console.log('🔑 Password: admin123');
+        console.log('🧪 Password test:', passwordTest ? 'Valid' : 'Invalid');
 
-      // Refresh users list
-      users = await db.executeWithRetry(() =>
-        db.prisma.user.findMany({
+        // Refresh users list directly
+        users = await db.prisma.user.findMany({
           select: {
             id: true,
             email: true,
@@ -119,9 +118,48 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
             isActive: true,
             createdAt: true
           }
-        })
-      );
-      adminUser = users.find(user => user.role === 'ADMIN');
+        });
+        adminUser = users.find(user => user.role === 'ADMIN');
+
+      } catch (dbError) {
+        console.error('❌ Direct database fix failed:', dbError);
+        // Try with executeWithRetry as fallback
+        try {
+          const hashedPassword = await bcrypt.hash('admin123', 10);
+
+          const fixedAdmin = await db.executeWithRetry(() =>
+            db.prisma.user.upsert({
+              where: { email: 'admin@onwarddominicans.com' },
+              update: {
+                password: hashedPassword,
+                role: 'ADMIN',
+                isActive: true,
+                username: 'admin',
+                firstName: 'Admin',
+                lastName: 'User'
+              },
+              create: {
+                email: 'admin@onwarddominicans.com',
+                username: 'admin',
+                password: hashedPassword,
+                firstName: 'Admin',
+                lastName: 'User',
+                role: 'ADMIN',
+                isActive: true
+              }
+            })
+          );
+
+          passwordTest = await bcrypt.compare('admin123', fixedAdmin.password);
+          adminFixed = true;
+
+          console.log('✅ Admin user fixed with retry mechanism!');
+
+        } catch (retryError) {
+          console.error('❌ Both direct and retry methods failed:', retryError);
+          adminFixed = false;
+        }
+      }
     }
 
     const response: ApiResponse = {
@@ -239,6 +277,73 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction): Pr
     res.json(response);
   } catch (error) {
     console.error('❌ List users failed:', error);
+    next(error);
+  }
+});
+
+// Direct admin fix endpoint (no wrappers)
+router.post('/admin-fix', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    console.log('🔧 Direct admin fix requested...');
+
+    const { db } = await import('../services/database');
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+
+    // Direct database operation
+    const adminUser = await db.prisma.user.upsert({
+      where: { email: 'admin@onwarddominicans.com' },
+      update: {
+        password: hashedPassword,
+        role: 'ADMIN',
+        isActive: true,
+        username: 'admin',
+        firstName: 'Admin',
+        lastName: 'User'
+      },
+      create: {
+        email: 'admin@onwarddominicans.com',
+        username: 'admin',
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'ADMIN',
+        isActive: true
+      }
+    });
+
+    // Test the password
+    const passwordTest = await bcrypt.compare('admin123', adminUser.password);
+
+    console.log('✅ Direct admin fix completed!');
+    console.log('📧 Email:', adminUser.email);
+    console.log('🔑 Password: admin123');
+    console.log('🧪 Password test:', passwordTest ? 'Valid' : 'Invalid');
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'Admin user fixed successfully',
+        adminUser: {
+          id: adminUser.id,
+          email: adminUser.email,
+          username: adminUser.username,
+          role: adminUser.role,
+          isActive: adminUser.isActive
+        },
+        passwordTest: passwordTest,
+        credentials: {
+          email: 'admin@onwarddominicans.com',
+          password: 'admin123'
+        }
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Direct admin fix failed:', error);
     next(error);
   }
 });
