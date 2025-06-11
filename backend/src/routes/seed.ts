@@ -45,10 +45,10 @@ router.get('/status', async (req: Request, res: Response, next: NextFunction): P
   try {
     const { db } = await import('../services/database');
 
-    const userCount = await db.prisma.user.count();
-    const articleCount = await db.prisma.article.count();
-    const authorCount = await db.prisma.author.count();
-    const categoryCount = await db.prisma.category.count();
+    const userCount = await db.executeWithRetry(() => db.prisma.user.count());
+    const articleCount = await db.executeWithRetry(() => db.prisma.article.count());
+    const authorCount = await db.executeWithRetry(() => db.prisma.author.count());
+    const categoryCount = await db.executeWithRetry(() => db.prisma.category.count());
 
     const response: ApiResponse = {
       success: true,

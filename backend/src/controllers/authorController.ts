@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '../services/database';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { safePrismaOperation, rawSqlFallbacks } from '../utils/prismaHelper';
 import {
   ApiResponse,
   CreateAuthorData,
@@ -38,25 +39,10 @@ export const getAuthors = async (
       ];
     }
 
-    // Get total count for pagination
-    const total = await db.prisma.author.count({ where });
-
-    // Get authors
-    const authors = await db.prisma.author.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        _count: {
-          select: {
-            articles: {
-              where: { status: 'PUBLISHED' },
-            },
-          },
-        },
-      },
-    });
+    // Use raw SQL directly to avoid prepared statement conflicts
+    console.log('🔄 Using raw SQL for authors to avoid prepared statement conflicts');
+    const total = await rawSqlFallbacks.countAuthors();
+    const authors = await rawSqlFallbacks.getAuthors(skip, take, sortBy, sortOrder);
 
     const totalPages = Math.ceil(total / take);
     const meta: PaginationMeta = {

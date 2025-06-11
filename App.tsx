@@ -14,6 +14,7 @@ import NewsArticleModal from './components/NewsArticleModal';
 import ImageLightboxModal from './components/ImageLightboxModal';
 import SlideshowModal from './components/SlideshowModal';
 import LoadingSpinner from './components/LoadingSpinner';
+import SEOHead from './components/SEOHead';
 // import ApiExample from './components/ApiExample'; // Demo only - remove for production
 
 import { NewsArticle as NewsArticleType, GalleryItem, GalleryStack } from './types';
@@ -288,6 +289,13 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+      <SEOHead
+        title={selectedNewsArticle ? `${selectedNewsArticle.title} - Onward Dominicans` : undefined}
+        description={selectedNewsArticle ? selectedNewsArticle.summary : undefined}
+        image={selectedNewsArticle ? selectedNewsArticle.imageUrl : undefined}
+        article={selectedNewsArticle || undefined}
+        type={selectedNewsArticle ? 'article' : 'website'}
+      />
       <TopHeader theme={theme} toggleTheme={toggleTheme} />
       <NavBar
         navLinks={NAV_LINKS}

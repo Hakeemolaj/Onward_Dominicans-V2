@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '../services/database';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { safePrismaOperation, rawSqlFallbacks } from '../utils/prismaHelper';
 import {
   ApiResponse,
   CreateCategoryData,
@@ -25,19 +26,9 @@ export const getCategories = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const categories = await db.prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-      include: {
-        _count: {
-          select: {
-            articles: {
-              where: { status: 'PUBLISHED' },
-            },
-          },
-        },
-      },
-    });
+    // Use raw SQL directly to avoid prepared statement conflicts
+    console.log('🔄 Using raw SQL for categories to avoid prepared statement conflicts');
+    const categories = await rawSqlFallbacks.getCategories();
 
     const response: ApiResponse = {
       success: true,

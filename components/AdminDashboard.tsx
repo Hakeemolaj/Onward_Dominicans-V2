@@ -6,6 +6,40 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
+interface ArticleFormData {
+  title: string;
+  summary: string;
+  content: string;
+  imageUrl: string;
+  authorId: string;
+  categoryId: string;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  tags: string[];
+}
+
+interface AuthorFormData {
+  name: string;
+  email: string;
+  bio: string;
+  avatarUrl: string;
+}
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  color: string;
+}
+
+interface GalleryItemFormData {
+  title: string;
+  description: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  photographer: string;
+  location: string;
+  categoryId: string;
+}
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [articles, setArticles] = useState<any[]>([]);
   const [authors, setAuthors] = useState<any[]>([]);
@@ -17,6 +51,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Modal states
+  const [showArticleModal, setShowArticleModal] = useState(false);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Form states
+  const [articleForm, setArticleForm] = useState<ArticleFormData>({
+    title: '',
+    summary: '',
+    content: '',
+    imageUrl: '',
+    authorId: '',
+    categoryId: '',
+    status: 'DRAFT',
+    tags: []
+  });
+
+  const [authorForm, setAuthorForm] = useState<AuthorFormData>({
+    name: '',
+    email: '',
+    bio: '',
+    avatarUrl: ''
+  });
+
+  const [categoryForm, setCategoryForm] = useState<CategoryFormData>({
+    name: '',
+    description: '',
+    color: '#3B82F6'
+  });
+
+  const [galleryForm, setGalleryForm] = useState<GalleryItemFormData>({
+    title: '',
+    description: '',
+    imageUrl: '',
+    thumbnailUrl: '',
+    photographer: '',
+    location: '',
+    categoryId: ''
+  });
 
   useEffect(() => {
     fetchData();
@@ -65,9 +141,96 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     setTimeout(() => setNotification(null), 5000);
   };
 
+  // Reset form functions
+  const resetArticleForm = () => {
+    setArticleForm({
+      title: '',
+      summary: '',
+      content: '',
+      imageUrl: '',
+      authorId: '',
+      categoryId: '',
+      status: 'DRAFT',
+      tags: []
+    });
+    setEditingItem(null);
+  };
+
+  const resetAuthorForm = () => {
+    setAuthorForm({
+      name: '',
+      email: '',
+      bio: '',
+      avatarUrl: ''
+    });
+    setEditingItem(null);
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryForm({
+      name: '',
+      description: '',
+      color: '#3B82F6'
+    });
+    setEditingItem(null);
+  };
+
+  const resetGalleryForm = () => {
+    setGalleryForm({
+      title: '',
+      description: '',
+      imageUrl: '',
+      thumbnailUrl: '',
+      photographer: '',
+      location: '',
+      categoryId: ''
+    });
+    setEditingItem(null);
+  };
+
+  // Article CRUD operations
+  const handleCreateArticle = () => {
+    resetArticleForm();
+    setShowArticleModal(true);
+  };
+
+  const handleEditArticle = (article: any) => {
+    setEditingItem(article);
+    setArticleForm({
+      title: article.title || '',
+      summary: article.summary || '',
+      content: article.content || '',
+      imageUrl: article.imageUrl || '',
+      authorId: article.authorId || '',
+      categoryId: article.categoryId || '',
+      status: article.status || 'DRAFT',
+      tags: article.tags?.map((tag: any) => tag.name) || []
+    });
+    setShowArticleModal(true);
+  };
+
+  const handleSaveArticle = async () => {
+    try {
+      const response = editingItem
+        ? await apiService.updateArticle(editingItem.id, articleForm)
+        : await apiService.createArticle(articleForm);
+
+      if (response.success) {
+        showNotification('success', `Article ${editingItem ? 'updated' : 'created'} successfully`);
+        setShowArticleModal(false);
+        resetArticleForm();
+        fetchData();
+      } else {
+        showNotification('error', response.error?.message || 'Failed to save article');
+      }
+    } catch (error) {
+      showNotification('error', 'Error saving article');
+    }
+  };
+
   const handleDeleteArticle = async (id: string) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
-    
+
     try {
       const response = await apiService.deleteArticle(id);
       if (response.success) {
@@ -78,6 +241,89 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       }
     } catch (error) {
       showNotification('error', 'Error deleting article');
+    }
+  };
+
+  // Author CRUD operations
+  const handleCreateAuthor = () => {
+    resetAuthorForm();
+    setShowAuthorModal(true);
+  };
+
+  const handleEditAuthor = (author: any) => {
+    setEditingItem(author);
+    setAuthorForm({
+      name: author.name || '',
+      email: author.email || '',
+      bio: author.bio || '',
+      avatarUrl: author.avatarUrl || ''
+    });
+    setShowAuthorModal(true);
+  };
+
+  const handleSaveAuthor = async () => {
+    try {
+      const response = editingItem
+        ? await apiService.updateAuthor(editingItem.id, authorForm)
+        : await apiService.createAuthor(authorForm);
+
+      if (response.success) {
+        showNotification('success', `Author ${editingItem ? 'updated' : 'created'} successfully`);
+        setShowAuthorModal(false);
+        resetAuthorForm();
+        fetchData();
+      } else {
+        showNotification('error', response.error?.message || 'Failed to save author');
+      }
+    } catch (error) {
+      showNotification('error', 'Error saving author');
+    }
+  };
+
+  // Category CRUD operations
+  const handleCreateCategory = () => {
+    resetCategoryForm();
+    setShowCategoryModal(true);
+  };
+
+  const handleEditCategory = (category: any) => {
+    setEditingItem(category);
+    setCategoryForm({
+      name: category.name || '',
+      description: category.description || '',
+      color: category.color || '#3B82F6'
+    });
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategory = async () => {
+    try {
+      const response = editingItem
+        ? await apiService.updateCategory(editingItem.id, categoryForm)
+        : await apiService.createCategory(categoryForm);
+
+      if (response.success) {
+        showNotification('success', `Category ${editingItem ? 'updated' : 'created'} successfully`);
+        setShowCategoryModal(false);
+        resetCategoryForm();
+        fetchData();
+      } else {
+        showNotification('error', response.error?.message || 'Failed to save category');
+      }
+    } catch (error) {
+      showNotification('error', 'Error saving category');
+    }
+  };
+
+  const handleSetFeaturedArticle = async (id: string) => {
+    try {
+      const response = await apiService.setFeaturedArticle(id);
+      if (response.success) {
+        showNotification('success', 'Article set as featured');
+        fetchData(); // Refresh data
+      }
+    } catch (error) {
+      showNotification('error', 'Error setting featured article');
     }
   };
 
@@ -338,7 +584,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     <option value="ARCHIVED">Archived</option>
                   </select>
                   <button
-                    onClick={() => alert('Create article feature coming soon!')}
+                    onClick={handleCreateArticle}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                   >
                     <span className="mr-2">✏️</span>
@@ -402,7 +648,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
                           <button
-                            onClick={() => alert('Edit functionality coming soon!')}
+                            onClick={() => handleEditArticle(article)}
                             className="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                           >
                             <span className="mr-1">✏️</span>
@@ -433,7 +679,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     </p>
                     {(!searchTerm && statusFilter === 'all') && (
                       <button
-                        onClick={() => alert('Create article feature coming soon!')}
+                        onClick={handleCreateArticle}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
                       >
                         <span className="mr-2">✏️</span>
@@ -623,7 +869,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     Authors ({authors.length})
                   </h3>
                   <button
-                    onClick={() => alert('Add author feature coming soon!')}
+                    onClick={handleCreateAuthor}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
                   >
                     <span className="mr-2">👤</span>
@@ -665,7 +911,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         <span>Joined {new Date(author.createdAt).toLocaleDateString()}</span>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => alert('Edit author feature coming soon!')}
+                            onClick={() => handleEditAuthor(author)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
                           >
                             Edit
@@ -690,7 +936,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     Categories ({categories.length})
                   </h3>
                   <button
-                    onClick={() => alert('Add category feature coming soon!')}
+                    onClick={handleCreateCategory}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
                   >
                     <span className="mr-2">🏷️</span>
@@ -725,7 +971,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         <span>Created {new Date(category.createdAt).toLocaleDateString()}</span>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => alert('Edit category feature coming soon!')}
+                            onClick={() => handleEditCategory(category)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
                           >
                             Edit
@@ -791,6 +1037,294 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
           </div>
         )}
       </div>
+
+      {/* Article Modal */}
+      {showArticleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
+                {editingItem ? 'Edit Article' : 'Create New Article'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={articleForm.title}
+                  onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter article title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Summary
+                </label>
+                <textarea
+                  value={articleForm.summary}
+                  onChange={(e) => setArticleForm({ ...articleForm, summary: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter article summary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Content
+                </label>
+                <textarea
+                  value={articleForm.content}
+                  onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter article content"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Author
+                  </label>
+                  <select
+                    value={articleForm.authorId}
+                    onChange={(e) => setArticleForm({ ...articleForm, authorId: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select an author</option>
+                    {authors.map((author) => (
+                      <option key={author.id} value={author.id}>
+                        {author.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Category
+                  </label>
+                  <select
+                    value={articleForm.categoryId}
+                    onChange={(e) => setArticleForm({ ...articleForm, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={articleForm.status}
+                    onChange={(e) => setArticleForm({ ...articleForm, status: e.target.value as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="DRAFT">Draft</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={articleForm.imageUrl}
+                    onChange={(e) => setArticleForm({ ...articleForm, imageUrl: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowArticleModal(false);
+                  resetArticleForm();
+                }}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveArticle}
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
+              >
+                {editingItem ? 'Update' : 'Create'} Article
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Author Modal */}
+      {showAuthorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-lg w-full">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
+                {editingItem ? 'Edit Author' : 'Create New Author'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={authorForm.name}
+                  onChange={(e) => setAuthorForm({ ...authorForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter author name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={authorForm.email}
+                  onChange={(e) => setAuthorForm({ ...authorForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="author@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Bio
+                </label>
+                <textarea
+                  value={authorForm.bio}
+                  onChange={(e) => setAuthorForm({ ...authorForm, bio: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter author bio"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Avatar URL
+                </label>
+                <input
+                  type="url"
+                  value={authorForm.avatarUrl}
+                  onChange={(e) => setAuthorForm({ ...authorForm, avatarUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowAuthorModal(false);
+                  resetAuthorForm();
+                }}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAuthor}
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+              >
+                {editingItem ? 'Update' : 'Create'} Author
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-lg w-full">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
+                {editingItem ? 'Edit Category' : 'Create New Category'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter category name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="Enter category description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Color
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="color"
+                    value={categoryForm.color}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                    className="w-12 h-10 border border-slate-300 dark:border-slate-600 rounded-md"
+                  />
+                  <input
+                    type="text"
+                    value={categoryForm.color}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    placeholder="#3B82F6"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  resetCategoryForm();
+                }}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCategory}
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+              >
+                {editingItem ? 'Update' : 'Create'} Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

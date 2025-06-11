@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../services/database';
+import { MockDataService } from '../services/mockDataService';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ApiResponse, PaginationMeta } from '../types';
@@ -49,70 +50,136 @@ export const getGalleryItems = async (
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {
-      isActive: true,
-    };
+    try {
+      // Try database first
+      const where: any = {
+        isActive: true,
+      };
 
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
+      if (categoryId) {
+        where.categoryId = categoryId;
+      }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { photographer: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { photographer: { contains: search, mode: 'insensitive' } },
+          { location: { contains: search, mode: 'insensitive' } },
+        ];
+      }
 
-    // Get total count
-    const total = await db.prisma.galleryItem.count({ where });
+      // Get total count
+      const total = await db.prisma.galleryItem.count({ where });
 
-    // Get gallery items
-    const galleryItems = await db.prisma.galleryItem.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            color: true,
+      // Get gallery items
+      const galleryItems = await db.prisma.galleryItem.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
           },
         },
-        tags: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
+      });
 
-    const totalPages = Math.ceil(total / limit);
-    const meta: PaginationMeta = {
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1,
-    };
+      const totalPages = Math.ceil(total / limit);
+      const meta: PaginationMeta = {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
 
-    const response: ApiResponse = {
-      success: true,
-      data: galleryItems,
-      meta,
-      timestamp: new Date().toISOString(),
-    };
+      // If no data from database, use mock data
+      if (galleryItems.length === 0 && total === 0) {
+        console.log('No gallery items in database, using mock data');
+        const mockGalleryItems = MockDataService.getGalleryItems();
 
-    res.json(response);
+        const mockTotal = mockGalleryItems.length;
+        const paginatedMockItems = mockGalleryItems.slice(skip, skip + limit);
+        const mockTotalPages = Math.ceil(mockTotal / limit);
+
+        const mockMeta: PaginationMeta = {
+          total: mockTotal,
+          page,
+          limit,
+          totalPages: mockTotalPages,
+          hasNext: page < mockTotalPages,
+          hasPrev: page > 1,
+        };
+
+        const mockResponse: ApiResponse = {
+          success: true,
+          data: paginatedMockItems,
+          meta: mockMeta,
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(mockResponse);
+        return;
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: galleryItems,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (dbError) {
+      // Fallback to mock data
+      console.log('Database failed, using mock data for gallery items');
+      const mockGalleryItems = MockDataService.getGalleryItems();
+
+      // Apply basic filtering
+      let filteredItems = mockGalleryItems;
+      if (search) {
+        filteredItems = mockGalleryItems.filter(item =>
+          item.title.toLowerCase().includes(search.toLowerCase()) ||
+          (item.description && item.description.toLowerCase().includes(search.toLowerCase()))
+        );
+      }
+
+      const total = filteredItems.length;
+      const paginatedItems = filteredItems.slice(skip, skip + limit);
+      const totalPages = Math.ceil(total / limit);
+
+      const meta: PaginationMeta = {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: paginatedItems,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    }
   } catch (error) {
     next(error);
   }

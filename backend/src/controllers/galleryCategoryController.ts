@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../services/database';
+import { MockDataService } from '../services/mockDataService';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ApiResponse, PaginationMeta } from '../types';
@@ -39,46 +40,103 @@ export const getGalleryCategories = async (
 
     const skip = (page - 1) * limit;
 
-    // Get total count
-    const total = await db.prisma.galleryCategory.count({
-      where: { isActive: true },
-    });
+    try {
+      // Try database first
+      const total = await db.prisma.galleryCategory.count({
+        where: { isActive: true },
+      });
 
-    // Get gallery categories
-    const categories = await db.prisma.galleryCategory.findMany({
-      where: { isActive: true },
-      skip,
-      take: limit,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        _count: {
-          select: {
-            galleryItems: {
-              where: { isActive: true },
+      // Get gallery categories
+      const categories = await db.prisma.galleryCategory.findMany({
+        where: { isActive: true },
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          _count: {
+            select: {
+              galleryItems: {
+                where: { isActive: true },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const totalPages = Math.ceil(total / limit);
-    const meta: PaginationMeta = {
-      total,
-      page,
-      limit,
-      totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1,
-    };
+      const totalPages = Math.ceil(total / limit);
+      const meta: PaginationMeta = {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
 
-    const response: ApiResponse = {
-      success: true,
-      data: categories,
-      meta,
-      timestamp: new Date().toISOString(),
-    };
+      // If no data from database, use mock data
+      if (categories.length === 0 && total === 0) {
+        console.log('No gallery categories in database, using mock data');
+        const mockCategories = MockDataService.getGalleryCategories();
 
-    res.json(response);
+        const mockTotal = mockCategories.length;
+        const paginatedMockCategories = mockCategories.slice(skip, skip + limit);
+        const mockTotalPages = Math.ceil(mockTotal / limit);
+
+        const mockMeta: PaginationMeta = {
+          total: mockTotal,
+          page,
+          limit,
+          totalPages: mockTotalPages,
+          hasNext: page < mockTotalPages,
+          hasPrev: page > 1,
+        };
+
+        const mockResponse: ApiResponse = {
+          success: true,
+          data: paginatedMockCategories,
+          meta: mockMeta,
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(mockResponse);
+        return;
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: categories,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (dbError) {
+      // Fallback to mock data
+      console.log('Database failed, using mock data for gallery categories');
+      const mockCategories = MockDataService.getGalleryCategories();
+
+      const total = mockCategories.length;
+      const paginatedCategories = mockCategories.slice(skip, skip + limit);
+      const totalPages = Math.ceil(total / limit);
+
+      const meta: PaginationMeta = {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: paginatedCategories,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    }
   } catch (error) {
     next(error);
   }

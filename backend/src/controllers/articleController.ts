@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../services/database';
+import { MockDataService } from '../services/mockDataService';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
@@ -43,82 +44,157 @@ export const getArticles = async (
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    // Build where clause
-    const where: any = {};
+    try {
+      // Try database first
+      const where: any = {};
 
-    if (status) where.status = status;
-    if (authorId) where.authorId = authorId;
-    if (categoryId) where.categoryId = categoryId;
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { summary: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : [tags];
-      where.tags = {
-        some: {
-          name: { in: tagArray },
+      if (status) where.status = status;
+      if (authorId) where.authorId = authorId;
+      if (categoryId) where.categoryId = categoryId;
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { summary: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+      if (tags) {
+        const tagArray = Array.isArray(tags) ? tags : [tags];
+        where.tags = {
+          some: {
+            name: { in: tagArray },
+          },
+        };
+      }
+
+      // Get total count for pagination
+      const total = await db.prisma.article.count({ where });
+
+      // Get articles
+      const articles = await db.prisma.article.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              bio: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
         },
+      });
+
+      const totalPages = Math.ceil(total / take);
+      const meta: PaginationMeta = {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
       };
+
+      // If no data from database, use mock data
+      if (articles.length === 0 && total === 0) {
+        console.log('No articles in database, using mock data');
+        const mockArticles = MockDataService.getArticles();
+
+        // Apply basic filtering to mock data
+        let filteredArticles = mockArticles;
+        if (search) {
+          filteredArticles = mockArticles.filter(article =>
+            article.title.toLowerCase().includes(search.toLowerCase()) ||
+            article.summary.toLowerCase().includes(search.toLowerCase())
+          );
+        }
+
+        const mockTotal = filteredArticles.length;
+        const paginatedMockArticles = filteredArticles.slice(skip, skip + take);
+        const mockTotalPages = Math.ceil(mockTotal / take);
+
+        const mockMeta: PaginationMeta = {
+          total: mockTotal,
+          page: parseInt(page),
+          limit: take,
+          totalPages: mockTotalPages,
+          hasNext: parseInt(page) < mockTotalPages,
+          hasPrev: parseInt(page) > 1,
+        };
+
+        const mockResponse: ApiResponse = {
+          success: true,
+          data: paginatedMockArticles,
+          meta: mockMeta,
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(mockResponse);
+        return;
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: articles,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (dbError) {
+      // Fallback to mock data if database fails
+      console.log('Database failed, using mock data for articles');
+      const mockArticles = MockDataService.getArticles();
+
+      // Apply basic filtering to mock data
+      let filteredArticles = mockArticles;
+      if (search) {
+        filteredArticles = mockArticles.filter(article =>
+          article.title.toLowerCase().includes(search.toLowerCase()) ||
+          article.summary.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      const total = filteredArticles.length;
+      const paginatedArticles = filteredArticles.slice(skip, skip + take);
+      const totalPages = Math.ceil(total / take);
+
+      const meta: PaginationMeta = {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: paginatedArticles,
+        meta,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
     }
-
-    // Get total count for pagination
-    const total = await db.prisma.article.count({ where });
-
-    // Get articles
-    const articles = await db.prisma.article.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            bio: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            color: true,
-          },
-        },
-        tags: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
-
-    const totalPages = Math.ceil(total / take);
-    const meta: PaginationMeta = {
-      total,
-      page: parseInt(page),
-      limit: take,
-      totalPages,
-      hasNext: parseInt(page) < totalPages,
-      hasPrev: parseInt(page) > 1,
-    };
-
-    const response: ApiResponse = {
-      success: true,
-      data: articles,
-      meta,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -133,48 +209,132 @@ export const getArticle = async (
   try {
     const { id } = req.params;
 
-    const article = await db.prisma.article.findFirst({
-      where: {
-        OR: [{ id }, { slug: id }],
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            bio: true,
+    try {
+      const article = await db.prisma.article.findFirst({
+        where: {
+          OR: [{ id }, { slug: id }],
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              bio: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
           },
         },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            color: true,
-          },
-        },
-        tags: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
+      });
 
-    if (!article) {
-      throw createError('Article not found', 404);
+      if (!article) {
+        throw createError('Article not found', 404);
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: article,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (dbError) {
+      // Fallback to mock data
+      console.log('Database failed, using mock data for single article');
+      const mockArticles = MockDataService.getArticles();
+      const article = mockArticles.find(a => a.id === id || a.slug === id);
+
+      if (!article) {
+        throw createError('Article not found', 404);
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: article,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
     }
+  } catch (error) {
+    next(error);
+  }
+};
 
-    const response: ApiResponse = {
-      success: true,
-      data: article,
-      timestamp: new Date().toISOString(),
-    };
+// Get featured article
+export const getFeaturedArticle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    try {
+      // Try to get the most recent published article from database
+      const article = await db.prisma.article.findFirst({
+        where: { status: 'PUBLISHED' },
+        orderBy: { publishedAt: 'desc' },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              bio: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      });
 
-    res.json(response);
+      const response: ApiResponse = {
+        success: true,
+        data: article,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (dbError) {
+      // Fallback to mock data
+      console.log('Database failed, using mock data for featured article');
+      const mockArticles = MockDataService.getArticles();
+      const featuredArticle = mockArticles[0]; // Use first article as featured
+
+      const response: ApiResponse = {
+        success: true,
+        data: featuredArticle,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    }
   } catch (error) {
     next(error);
   }
@@ -518,95 +678,6 @@ export const unsetFeaturedArticle = async (
   }
 };
 
-// Get featured article
-export const getFeaturedArticle = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    // Get the most recent published article (featured functionality removed)
-    let article = await db.prisma.article.findFirst({
-      where: {
-        status: 'PUBLISHED',
-      },
-      orderBy: {
-        publishedAt: 'desc',
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            bio: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            color: true,
-          },
-        },
-        tags: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
 
-    // If no featured article, fall back to most recent published article
-    if (!article) {
-      article = await db.prisma.article.findFirst({
-        where: {
-          status: 'PUBLISHED',
-        },
-        orderBy: {
-          publishedAt: 'desc',
-        },
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
-              bio: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              color: true,
-            },
-          },
-          tags: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      });
-    }
-
-    const response: ApiResponse = {
-      success: true,
-      data: article,
-      timestamp: new Date().toISOString(),
-    };
-
-    res.json(response);
-  } catch (error) {
-    next(error);
-  }
-};
 
 

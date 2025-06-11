@@ -4,6 +4,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import { db } from '../services/database';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { safePrismaOperation, rawSqlFallbacks } from '../utils/prismaHelper';
 import {
   ApiResponse,
   CreateUserData,
@@ -105,10 +106,9 @@ export const login = async (
   try {
     const { email, password }: LoginData = req.body;
 
-    // Find user by email
-    const user = await db.prisma.user.findUnique({
-      where: { email },
-    });
+    // Use raw SQL directly to avoid prepared statement conflicts
+    console.log('🔄 Using raw SQL for user lookup to avoid prepared statement conflicts');
+    const user = await rawSqlFallbacks.findUserByEmail(email);
 
     if (!user || !user.isActive) {
       throw createError('Invalid credentials', 401);
@@ -168,19 +168,9 @@ export const getProfile = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await db.prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    // Use raw SQL directly to avoid prepared statement conflicts
+    console.log('🔄 Using raw SQL for profile lookup to avoid prepared statement conflicts');
+    const user = await rawSqlFallbacks.findUserById(req.user!.id);
 
     if (!user) {
       throw createError('User not found', 404);

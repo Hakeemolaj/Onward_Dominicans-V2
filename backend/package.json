@@ -14,7 +14,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "ts-node src/utils/seed.ts",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:old": "ts-node src/utils/seed.ts",
+    "db:reset": "node scripts/reset-db-connection.js",
     "db:studio": "prisma studio",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
@@ -23,6 +25,7 @@
   "dependencies": {
     "@google/genai": "^1.4.0",
     "@prisma/client": "^6.1.0",
+    "@supabase/supabase-js": "^2.50.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
