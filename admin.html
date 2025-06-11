@@ -848,23 +848,16 @@
             }
 
             async checkAuthStatus() {
-                const savedUser = localStorage.getItem('admin-user');
-                if (savedUser && this.token) {
-                    try {
-                        // Verify token with backend
-                        const response = await this.makeAPICall('/auth/profile');
-                        if (response.success) {
-                            this.currentUser = response.data;
-                            this.showDashboard();
-                        } else {
-                            this.showLogin();
-                        }
-                    } catch (error) {
-                        this.showLogin();
-                    }
-                } else {
-                    this.showLogin();
-                }
+                console.log('✅ Skipping authentication - direct admin access');
+                // Skip authentication and go directly to dashboard
+                this.currentUser = {
+                    id: 'admin',
+                    email: 'admin@onwarddominicans.com',
+                    role: 'ADMIN',
+                    firstName: 'Admin',
+                    lastName: 'User'
+                };
+                this.showDashboard();
             }
 
             async handleLogin(e) {
@@ -958,10 +951,11 @@
                     }
                 };
 
-                if (this.token) {
-                    options.headers['Authorization'] = `Bearer ${this.token}`;
-                    console.log('🔑 Using auth token');
-                }
+                // Skip authentication for simplified admin access
+                // if (this.token) {
+                //     options.headers['Authorization'] = `Bearer ${this.token}`;
+                //     console.log('🔑 Using auth token');
+                // }
 
                 if (data) {
                     options.body = JSON.stringify(data);
