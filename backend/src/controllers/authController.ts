@@ -108,15 +108,25 @@ export const login = async (
 
     // Use raw SQL directly to avoid prepared statement conflicts
     console.log('🔄 Using raw SQL for user lookup to avoid prepared statement conflicts');
+    console.log('🔍 Login attempt for email:', email);
+
     const user = await rawSqlFallbacks.findUserByEmail(email);
 
+    console.log('👤 User found:', user ? `${user.email} (${user.role})` : 'No user found');
+    console.log('🔒 User active:', user ? user.isActive : 'N/A');
+
     if (!user || !user.isActive) {
+      console.log('❌ Login failed: User not found or inactive');
       throw createError('Invalid credentials', 401);
     }
 
     // Verify password
+    console.log('🔑 Testing password...');
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('🧪 Password valid:', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('❌ Login failed: Invalid password');
       throw createError('Invalid credentials', 401);
     }
 
