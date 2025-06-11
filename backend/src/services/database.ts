@@ -41,11 +41,20 @@ class DatabaseService {
 
   public async connect(): Promise<void> {
     try {
-      await this.prisma.$connect();
+      console.log('🔄 Attempting database connection...');
+
+      // Add timeout to prevent hanging
+      const connectPromise = this.prisma.$connect();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database connection timeout after 30 seconds')), 30000);
+      });
+
+      await Promise.race([connectPromise, timeoutPromise]);
       console.log('✅ Database connected successfully');
     } catch (error) {
       console.error('❌ Database connection failed:', error);
-      throw error;
+      // Don't throw error to prevent server from crashing
+      console.log('⚠️ Server will continue without database connection');
     }
   }
 

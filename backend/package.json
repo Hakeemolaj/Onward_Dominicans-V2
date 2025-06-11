@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon src/app.ts",
-    "build": "tsc && prisma generate && prisma db push",
+    "build": "tsc && prisma generate",
     "start": "node dist/app.js",
     "postinstall": "prisma generate",
     "prepare:production": "node scripts/prepare-production.js",

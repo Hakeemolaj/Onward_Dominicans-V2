@@ -26,13 +26,13 @@ The Render backend environment variables are not properly configured to use the 
 4. **Add/Update these environment variables**:
 
 ```bash
-DATABASE_URL=postgresql://postgres.zrsfmghkjhxkjjzkigck:OnwardDominicans2024!SecureDB@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+# Use DIRECT connection instead of pooled for Render
+DATABASE_URL=postgresql://postgres.zrsfmghkjhxkjjzkigck:OnwardDominicans2024!SecureDB@aws-0-us-east-1.connect.supabase.com:5432/postgres?sslmode=require&connect_timeout=60&command_timeout=60
 SUPABASE_URL=https://zrsfmghkjhxkjjzkigck.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTU2NDAwOCwiZXhwIjoyMDY1MTQwMDA4fQ.Qm1j1hvU3LhIYYL2h34aFr7c3tYrVeP_DDEb96M2HmI
 NODE_ENV=production
 FRONTEND_URL=https://odmailsu.vercel.app
-JWT_SECRET=your_secure_jwt_secret_here
 ```
 
 5. **Redeploy the service** after updating environment variables
