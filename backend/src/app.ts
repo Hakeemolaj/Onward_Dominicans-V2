@@ -47,20 +47,34 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'https://odmailsu.vercel.app', // Production frontend (old)
-    'https://onward-dominicans.vercel.app', // Production frontend (new)
-    'https://odmailsu-ghd1kiimw-hakeemolajs-projects.vercel.app', // Vercel preview URL
-    /^https:\/\/odmailsu.*\.vercel\.app$/, // All old Vercel deployment URLs
-    /^https:\/\/onward-dominicans.*\.vercel\.app$/, // All new Vercel deployment URLs
-    'http://localhost:5173', // Local development
-    'http://localhost:5174', // Allow alternative port
-    'http://localhost:5175', // Allow another alternative port
-    'http://10.0.2.15:5173', // Allow network access
-    'http://10.0.2.15:5174', // Allow network access alternative port
-    'http://10.0.2.15:5175', // Allow network access alternative port
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      process.env.FRONTEND_URL_PRODUCTION || 'https://odmailsu.vercel.app',
+      'https://odmailsu.vercel.app', // Production frontend
+      'https://odmailsu-ghd1kiimw-hakeemolajs-projects.vercel.app', // Vercel preview URL
+      'http://localhost:5173', // Local development
+      'http://localhost:5174', // Allow alternative port
+      'http://localhost:5175', // Allow another alternative port
+      'http://10.0.2.15:5173', // Allow network access
+      'http://10.0.2.15:5174', // Allow network access alternative port
+      'http://10.0.2.15:5175', // Allow network access alternative port
+    ];
+
+    // Check if origin is in allowed list or matches Vercel pattern
+    const isAllowed = allowedOrigins.includes(origin) ||
+                     /^https:\/\/odmailsu.*\.vercel\.app$/.test(origin);
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

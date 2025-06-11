@@ -3,8 +3,10 @@ services:
     name: onward-dominicans-backend
     env: node
     plan: free
+    region: ohio
     buildCommand: npm ci && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -23,12 +25,14 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: FRONTEND_URL
-        value: https://onward-dominicans.vercel.app
-      - key: GEMINI_API_KEY
-        sync: false # Set this manually in Render dashboard
-
-databases:
-  - name: onward-dominicans-db
-    plan: free
-    databaseName: onward_dominicans
-    user: onward_dominicans_user
+        value: https://odmailsu.vercel.app
+      - key: PGCONNECT_TIMEOUT
+        value: 60
+      - key: PGCOMMAND_TIMEOUT
+        value: 60
+      # These must be set manually in Render dashboard:
+      # DATABASE_URL: Your Supabase PostgreSQL connection string (pooled for production)
+      # SUPABASE_URL: Your Supabase project URL
+      # SUPABASE_ANON_KEY: Your Supabase anon key
+      # SUPABASE_SERVICE_ROLE_KEY: Your Supabase service role key
+      # GEMINI_API_KEY: Your Google Gemini API key (optional)
