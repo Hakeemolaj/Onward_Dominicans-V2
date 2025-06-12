@@ -3536,9 +3536,13 @@
             async loadGallery() {
                 try {
                     console.log('🖼️ Loading gallery data from backend...');
+                    console.log('🔍 DEBUG: Current gallery items count before load:', this.galleryItems?.length || 0);
+                    console.log('🔍 DEBUG: Current gallery categories count before load:', this.galleryCategories?.length || 0);
 
                     // Load gallery data with cache busting
                     const timestamp = Date.now();
+                    console.log('🔍 DEBUG: Making API calls with timestamp:', timestamp);
+
                     const [galleryResponse, galleryCategoriesResponse] = await Promise.all([
                         this.makeAPICall(`/gallery?limit=50&_t=${timestamp}`),
                         this.makeAPICall(`/gallery-categories?limit=50&_t=${timestamp}`)
@@ -3546,6 +3550,8 @@
 
                     console.log('🖼️ Gallery response:', galleryResponse);
                     console.log('🏷️ Gallery categories response:', galleryCategoriesResponse);
+                    console.log('🔍 DEBUG: Gallery response success:', galleryResponse?.success);
+                    console.log('🔍 DEBUG: Categories response success:', galleryCategoriesResponse?.success);
 
                     this.galleryItems = galleryResponse.data || [];
                     this.galleryCategories = galleryCategoriesResponse.data || [];
@@ -4659,9 +4665,15 @@
                 };
                 return window.adminDashboard.createGalleryItemInSupabase(testData || defaultData);
             };
+            window.testLoadGallery = () => window.adminDashboard.loadGallery();
+            window.testLoadCategories = () => window.adminDashboard.getGalleryCategoriesFromSupabase();
+            window.testLoadItems = () => window.adminDashboard.getGalleryFromSupabase();
 
             console.log('🔍 DEBUG: Gallery debug functions available:');
             console.log('  - debugGallery() - Run comprehensive gallery system debug');
             console.log('  - testGalleryCreate(data) - Test gallery item creation');
+            console.log('  - testLoadGallery() - Test full gallery loading');
+            console.log('  - testLoadCategories() - Test category loading only');
+            console.log('  - testLoadItems() - Test gallery items loading only');
         });
     </script>
