@@ -3635,9 +3635,35 @@
                     featured: formData.get('featured') === 'on'
                 };
 
-                // Validation
-                if (!articleData.title || !articleData.summary || !articleData.content || !articleData.authorId || !articleData.categoryId) {
-                    this.showToast('Please fill in all required fields', 'error');
+                // Debug validation
+                console.log('🔍 Validation Debug:', {
+                    title: articleData.title,
+                    summary: articleData.summary,
+                    content: articleData.content,
+                    contentLength: articleData.content?.length,
+                    authorId: articleData.authorId,
+                    categoryId: articleData.categoryId
+                });
+
+                // Validation with better content checking
+                if (!articleData.title || !articleData.title.trim()) {
+                    this.showToast('Please enter a title', 'error');
+                    return;
+                }
+                if (!articleData.summary || !articleData.summary.trim()) {
+                    this.showToast('Please enter a summary', 'error');
+                    return;
+                }
+                if (!articleData.content || !articleData.content.trim() || articleData.content.trim() === '<br>' || articleData.content.trim() === '&nbsp;') {
+                    this.showToast('Please enter article content', 'error');
+                    return;
+                }
+                if (!articleData.authorId) {
+                    this.showToast('Please select an author', 'error');
+                    return;
+                }
+                if (!articleData.categoryId) {
+                    this.showToast('Please select a category', 'error');
                     return;
                 }
 
