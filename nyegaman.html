@@ -1668,8 +1668,11 @@
             async createGalleryItemInSupabase(itemData) {
                 try {
                     console.log('🔄 Creating gallery item in Supabase:', itemData);
+                    console.log('🔍 DEBUG: Supabase URL:', this.supabaseUrl);
+                    console.log('🔍 DEBUG: Supabase Key exists:', !!this.supabaseAnonKey);
 
                     const id = 'gallery-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    console.log('🔍 DEBUG: Generated ID:', id);
 
                     const supabaseData = {
                         id: id,
@@ -1688,6 +1691,10 @@
                         createdBy: 'cmbsufok100009durfa1z503t'
                     };
 
+                    console.log('🔍 DEBUG: Final Supabase data:', JSON.stringify(supabaseData, null, 2));
+
+                    console.log('🔍 DEBUG: Making request to:', `${this.supabaseUrl}/rest/v1/gallery_items`);
+
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items`, {
                         method: 'POST',
                         headers: {
@@ -1699,13 +1706,18 @@
                         body: JSON.stringify(supabaseData)
                     });
 
+                    console.log('🔍 DEBUG: Response status:', response.status);
+                    console.log('🔍 DEBUG: Response headers:', Object.fromEntries(response.headers.entries()));
+
                     if (!response.ok) {
                         const error = await response.text();
+                        console.error('🔍 DEBUG: Error response body:', error);
                         throw new Error(`Supabase create failed: ${response.status} - ${error}`);
                     }
 
                     const result = await response.json();
                     console.log('✅ Gallery item created in Supabase:', result);
+                    console.log('🔍 DEBUG: Created item data:', JSON.stringify(result, null, 2));
 
                     return {
                         success: true,
@@ -1713,6 +1725,7 @@
                     };
                 } catch (error) {
                     console.error('❌ Supabase create gallery item failed:', error);
+                    console.error('🔍 DEBUG: Full error object:', error);
                     return {
                         success: false,
                         error: { message: error.message }
@@ -1951,6 +1964,60 @@
                 } catch (_) {
                     return false;
                 }
+            }
+
+            // Debug function to test gallery system
+            async debugGallerySystem() {
+                console.log('🔍 DEBUG: Starting gallery system debug...');
+
+                // Check Supabase configuration
+                console.log('🔍 DEBUG: Supabase URL:', this.supabaseUrl);
+                console.log('🔍 DEBUG: Supabase Key exists:', !!this.supabaseAnonKey);
+                console.log('🔍 DEBUG: Supabase Key length:', this.supabaseAnonKey?.length);
+
+                // Test Supabase connection
+                try {
+                    const testResponse = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories?limit=1`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    console.log('🔍 DEBUG: Supabase connection test status:', testResponse.status);
+
+                    if (testResponse.ok) {
+                        const testData = await testResponse.json();
+                        console.log('🔍 DEBUG: Supabase connection successful, sample data:', testData);
+                    } else {
+                        const errorText = await testResponse.text();
+                        console.error('🔍 DEBUG: Supabase connection failed:', errorText);
+                    }
+                } catch (error) {
+                    console.error('🔍 DEBUG: Supabase connection error:', error);
+                }
+
+                // Check form elements
+                const form = document.getElementById('gallery-editor-form');
+                const categorySelect = document.getElementById('gallery-category');
+                const titleInput = document.getElementById('gallery-title');
+
+                console.log('🔍 DEBUG: Form elements check:');
+                console.log('  - Form exists:', !!form);
+                console.log('  - Category select exists:', !!categorySelect);
+                console.log('  - Title input exists:', !!titleInput);
+                console.log('  - Category options count:', categorySelect?.options?.length || 0);
+
+                // Check gallery data
+                console.log('🔍 DEBUG: Gallery data:');
+                console.log('  - Gallery items count:', this.galleryItems?.length || 0);
+                console.log('  - Gallery categories count:', this.galleryCategories?.length || 0);
+
+                return {
+                    supabaseConfigured: !!(this.supabaseUrl && this.supabaseAnonKey),
+                    formElementsPresent: !!(form && categorySelect && titleInput),
+                    dataLoaded: !!(this.galleryItems && this.galleryCategories)
+                };
             }
 
             showToast(message, type = 'info') {
@@ -3947,16 +4014,38 @@
             }
 
             loadGalleryEditorData() {
+                console.log('🔍 DEBUG: Loading gallery editor data...');
+
                 // Populate category dropdown
                 const categorySelect = document.getElementById('gallery-category');
+                if (!categorySelect) {
+                    console.error('🔍 DEBUG: Category select element not found!');
+                    return;
+                }
+
                 categorySelect.innerHTML = '<option value="">Select a category</option>';
 
+                console.log('🔍 DEBUG: Available gallery categories:', this.galleryCategories?.length || 0);
+
+                if (!this.galleryCategories || this.galleryCategories.length === 0) {
+                    console.warn('🔍 DEBUG: No gallery categories available!');
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No categories available - Create one first';
+                    option.disabled = true;
+                    categorySelect.appendChild(option);
+                    return;
+                }
+
                 this.galleryCategories.forEach(category => {
+                    console.log('🔍 DEBUG: Adding category option:', category.name, category.id);
                     const option = document.createElement('option');
                     option.value = category.id;
                     option.textContent = category.name;
                     categorySelect.appendChild(option);
                 });
+
+                console.log('🔍 DEBUG: Category dropdown populated with', categorySelect.options.length - 1, 'categories');
             }
 
 
@@ -4183,12 +4272,20 @@
 
             async saveGalleryItem() {
                 console.log('🚀 Starting saveGalleryItem function...');
+                console.log('🔍 DEBUG: Current user ID being used:', 'cmbsufok100009durfa1z503t');
 
                 const form = document.getElementById('gallery-editor-form');
                 const formData = new FormData(form);
                 const saveBtn = document.getElementById('gallery-save-btn-text');
                 const saveSpinner = document.getElementById('gallery-save-spinner');
                 const saveStatus = document.getElementById('gallery-save-status');
+
+                // Debug form data
+                console.log('🔍 DEBUG: Form element found:', !!form);
+                console.log('🔍 DEBUG: FormData entries:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`  ${key}: ${value}`);
+                }
 
                 // Validate required fields
                 const title = formData.get('title')?.trim();
@@ -4547,5 +4644,24 @@
         // Initialize the admin dashboard
         document.addEventListener('DOMContentLoaded', () => {
             window.adminDashboard = new AdminDashboard();
+
+            // Expose debug functions to console
+            window.debugGallery = () => window.adminDashboard.debugGallerySystem();
+            window.testGalleryCreate = (testData) => {
+                const defaultData = {
+                    title: 'Test Gallery Item',
+                    description: 'Test description',
+                    imageUrl: 'https://via.placeholder.com/400x300',
+                    categoryId: window.adminDashboard.galleryCategories?.[0]?.id || 'test-category',
+                    photographer: 'Test Photographer',
+                    location: 'Test Location',
+                    dateTaken: new Date().toISOString()
+                };
+                return window.adminDashboard.createGalleryItemInSupabase(testData || defaultData);
+            };
+
+            console.log('🔍 DEBUG: Gallery debug functions available:');
+            console.log('  - debugGallery() - Run comprehensive gallery system debug');
+            console.log('  - testGalleryCreate(data) - Test gallery item creation');
         });
     </script>
