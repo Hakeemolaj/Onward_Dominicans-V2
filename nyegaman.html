@@ -3618,7 +3618,24 @@
                 // Get content from editor
                 const contentEditor = document.getElementById('article-content');
                 const htmlEditor = document.getElementById('article-content-html');
-                const content = htmlEditor.style.display !== 'none' ? htmlEditor.value : contentEditor.innerHTML;
+
+                // Check which editor is currently visible and get content from the active one
+                let content;
+                if (htmlEditor && !htmlEditor.classList.contains('hidden') && htmlEditor.style.display !== 'none') {
+                    // HTML editor is active
+                    content = htmlEditor.value;
+                } else {
+                    // Visual editor is active (default)
+                    content = contentEditor ? contentEditor.innerHTML : '';
+                }
+
+                console.log('📝 Content extraction debug:', {
+                    htmlEditorHidden: htmlEditor?.classList.contains('hidden'),
+                    htmlEditorDisplay: htmlEditor?.style.display,
+                    visualEditorContent: contentEditor?.innerHTML?.substring(0, 100),
+                    htmlEditorContent: htmlEditor?.value?.substring(0, 100),
+                    finalContent: content?.substring(0, 100)
+                });
 
                 // Prepare article data with new fields
                 const articleData = {
