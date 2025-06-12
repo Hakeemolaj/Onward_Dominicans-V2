@@ -3629,13 +3629,681 @@
             }
 
             async loadAnalytics() {
+                try {
+                    console.log('📊 Loading analytics data...');
+                    const mainContent = document.getElementById('main-content');
+
+                    // Show loading state
+                    mainContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">Loading Analytics...</h2>
+                            <p class="text-slate-600 dark:text-slate-400">Gathering insights from your content...</p>
+                        </div>
+                    `;
+
+                    // Fetch analytics data
+                    const analyticsData = await this.fetchAnalyticsData();
+
+                    // Render analytics dashboard
+                    this.renderAnalyticsDashboard(analyticsData);
+
+                } catch (error) {
+                    console.error('Error loading analytics:', error);
+                    const mainContent = document.getElementById('main-content');
+                    mainContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="text-red-500 text-4xl mb-4">⚠️</div>
+                            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">Analytics Error</h2>
+                            <p class="text-slate-600 dark:text-slate-400 mb-4">Unable to load analytics data</p>
+                            <button onclick="adminDashboard.loadAnalytics()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                Try Again
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            async fetchAnalyticsData() {
+                console.log('🔄 Fetching analytics data from API...');
+
+                // Fetch data from multiple endpoints
+                const [articlesResponse, authorsResponse, categoriesResponse, galleryResponse, galleryCategoriesResponse] = await Promise.all([
+                    this.makeAPICall('/articles?limit=1000'),
+                    this.makeAPICall('/authors?limit=100'),
+                    this.makeAPICall('/categories?limit=100'),
+                    this.makeAPICall('/gallery?limit=1000'),
+                    this.makeAPICall('/gallery-categories?limit=100')
+                ]);
+
+                const articles = articlesResponse.data || [];
+                const authors = authorsResponse.data || [];
+                const categories = categoriesResponse.data || [];
+                const galleryItems = galleryResponse.data || [];
+                const galleryCategories = galleryCategoriesResponse.data || [];
+
+                console.log('📊 Analytics data fetched:', {
+                    articles: articles.length,
+                    authors: authors.length,
+                    categories: categories.length,
+                    galleryItems: galleryItems.length,
+                    galleryCategories: galleryCategories.length
+                });
+
+                return this.processAnalyticsData({
+                    articles,
+                    authors,
+                    categories,
+                    galleryItems,
+                    galleryCategories
+                });
+            }
+
+            processAnalyticsData(data) {
+                const { articles, authors, categories, galleryItems, galleryCategories } = data;
+
+                // Content Statistics
+                const contentStats = {
+                    totalArticles: articles.length,
+                    publishedArticles: articles.filter(a => a.status === 'PUBLISHED').length,
+                    draftArticles: articles.filter(a => a.status === 'DRAFT').length,
+                    totalAuthors: authors.length,
+                    activeAuthors: authors.filter(a => a.isActive).length,
+                    totalCategories: categories.length,
+                    totalGalleryItems: galleryItems.length,
+                    totalGalleryCategories: galleryCategories.length
+                };
+
+                // Publishing trends (last 30 days)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                const recentArticles = articles.filter(a => new Date(a.createdAt) >= thirtyDaysAgo);
+                const recentGalleryItems = galleryItems.filter(g => new Date(g.createdAt) >= thirtyDaysAgo);
+
+                // Author performance
+                const authorStats = authors.map(author => {
+                    const authorArticles = articles.filter(a => a.authorId === author.id);
+                    const publishedCount = authorArticles.filter(a => a.status === 'PUBLISHED').length;
+                    const draftCount = authorArticles.filter(a => a.status === 'DRAFT').length;
+
+                    return {
+                        ...author,
+                        totalArticles: authorArticles.length,
+                        publishedArticles: publishedCount,
+                        draftArticles: draftCount,
+                        lastPublished: authorArticles
+                            .filter(a => a.status === 'PUBLISHED' && a.publishedAt)
+                            .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))[0]?.publishedAt
+                    };
+                }).sort((a, b) => b.totalArticles - a.totalArticles);
+
+                // Category distribution
+                const categoryStats = categories.map(category => {
+                    const categoryArticles = articles.filter(a => a.categoryId === category.id);
+                    const publishedCount = categoryArticles.filter(a => a.status === 'PUBLISHED').length;
+
+                    return {
+                        ...category,
+                        totalArticles: categoryArticles.length,
+                        publishedArticles: publishedCount,
+                        percentage: articles.length > 0 ? ((categoryArticles.length / articles.length) * 100).toFixed(1) : 0
+                    };
+                }).sort((a, b) => b.totalArticles - a.totalArticles);
+
+                // Gallery analytics
+                const galleryStats = {
+                    totalImages: galleryItems.length,
+                    stackGroups: [...new Set(galleryItems.filter(g => g.stackGroup).map(g => g.stackGroup))].length,
+                    singleImages: galleryItems.filter(g => !g.stackGroup).length,
+                    imagesWithLocation: galleryItems.filter(g => g.location).length,
+                    imagesWithPhotographer: galleryItems.filter(g => g.photographer).length
+                };
+
+                // Recent activity
+                const recentActivity = [
+                    ...articles.slice(0, 5).map(a => ({
+                        type: 'article',
+                        title: a.title,
+                        status: a.status,
+                        createdAt: a.createdAt,
+                        author: a.author?.name || 'Unknown'
+                    })),
+                    ...galleryItems.slice(0, 5).map(g => ({
+                        type: 'gallery',
+                        title: g.title,
+                        createdAt: g.createdAt,
+                        photographer: g.photographer
+                    }))
+                ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
+
+                // Publishing timeline (last 12 months)
+                const publishingTimeline = this.generatePublishingTimeline(articles);
+
+                return {
+                    contentStats,
+                    authorStats,
+                    categoryStats,
+                    galleryStats,
+                    recentActivity,
+                    publishingTimeline,
+                    recentArticles: recentArticles.length,
+                    recentGalleryItems: recentGalleryItems.length
+                };
+            }
+
+            generatePublishingTimeline(articles) {
+                const timeline = {};
+                const now = new Date();
+
+                // Initialize last 12 months
+                for (let i = 11; i >= 0; i--) {
+                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const key = date.toISOString().slice(0, 7); // YYYY-MM format
+                    timeline[key] = {
+                        month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                        published: 0,
+                        drafts: 0
+                    };
+                }
+
+                // Count articles by month
+                articles.forEach(article => {
+                    const date = new Date(article.createdAt);
+                    const key = date.toISOString().slice(0, 7);
+
+                    if (timeline[key]) {
+                        if (article.status === 'PUBLISHED') {
+                            timeline[key].published++;
+                        } else if (article.status === 'DRAFT') {
+                            timeline[key].drafts++;
+                        }
+                    }
+                });
+
+                return Object.values(timeline);
+            }
+
+            renderAnalyticsDashboard(analytics) {
                 const mainContent = document.getElementById('main-content');
+                const { contentStats, authorStats, categoryStats, galleryStats, recentActivity, publishingTimeline } = analytics;
+
                 mainContent.innerHTML = `
-                    <div class="text-center py-12">
-                        <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4">Analytics Dashboard</h2>
-                        <p class="text-slate-600 dark:text-slate-400">Analytics feature coming soon!</p>
+                    <div class="space-y-8">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-3xl font-bold text-slate-800 dark:text-slate-200">Analytics Dashboard</h2>
+                                <p class="text-slate-600 dark:text-slate-400 mt-2">Insights and metrics for your content management system</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <button onclick="adminDashboard.loadAnalytics()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    <span>Refresh</span>
+                                </button>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    Last updated: ${new Date().toLocaleTimeString()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overview Stats Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="stat-card text-white p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white/80 text-sm font-medium">Total Articles</p>
+                                        <p class="text-3xl font-bold">${contentStats.totalArticles}</p>
+                                        <p class="text-white/70 text-xs mt-1">${contentStats.publishedArticles} published</p>
+                                    </div>
+                                    <div class="bg-white/20 p-3 rounded-lg">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card green text-white p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white/80 text-sm font-medium">Active Authors</p>
+                                        <p class="text-3xl font-bold">${contentStats.activeAuthors}</p>
+                                        <p class="text-white/70 text-xs mt-1">${contentStats.totalAuthors} total</p>
+                                    </div>
+                                    <div class="bg-white/20 p-3 rounded-lg">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card orange text-white p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white/80 text-sm font-medium">Categories</p>
+                                        <p class="text-3xl font-bold">${contentStats.totalCategories}</p>
+                                        <p class="text-white/70 text-xs mt-1">Content organization</p>
+                                    </div>
+                                    <div class="bg-white/20 p-3 rounded-lg">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card purple text-white p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white/80 text-sm font-medium">Gallery Items</p>
+                                        <p class="text-3xl font-bold">${contentStats.totalGalleryItems}</p>
+                                        <p class="text-white/70 text-xs mt-1">${galleryStats.stackGroups} stacks</p>
+                                    </div>
+                                    <div class="bg-white/20 p-3 rounded-lg">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Publishing Timeline Chart -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Publishing Timeline</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Articles published over the last 12 months</p>
+                                </div>
+                                <div class="p-6">
+                                    <canvas id="publishing-timeline-chart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Category Distribution Chart -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Category Distribution</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Articles by category</p>
+                                </div>
+                                <div class="p-6">
+                                    <canvas id="category-distribution-chart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                `;
+
+                        <!-- Detailed Analytics Sections -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Author Performance -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Top Authors</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Most productive content creators</p>
+                                </div>
+                                <div class="p-6">
+                                    ${authorStats.slice(0, 5).map((author, index) => `
+                                        <div class="flex items-center justify-between py-3 ${index < 4 ? 'border-b border-slate-200 dark:border-slate-700' : ''}">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                                                    ${author.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900 dark:text-slate-100">${author.name}</p>
+                                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                                        ${author.publishedArticles} published, ${author.draftArticles} drafts
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-lg font-bold text-slate-900 dark:text-slate-100">${author.totalArticles}</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">articles</p>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${authorStats.length === 0 ? `
+                                        <div class="text-center py-8">
+                                            <div class="text-slate-400 dark:text-slate-500 text-4xl mb-4">👥</div>
+                                            <p class="text-slate-500 dark:text-slate-400">No authors found</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Category Performance -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Category Breakdown</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Content distribution by category</p>
+                                </div>
+                                <div class="p-6">
+                                    ${categoryStats.slice(0, 5).map((category, index) => `
+                                        <div class="flex items-center justify-between py-3 ${index < 4 ? 'border-b border-slate-200 dark:border-slate-700' : ''}">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-4 h-4 rounded-full flex-shrink-0" style="background-color: ${category.color || '#6B7280'}"></div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900 dark:text-slate-100">${category.name}</p>
+                                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                                        ${category.publishedArticles} published
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-lg font-bold text-slate-900 dark:text-slate-100">${category.totalArticles}</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">${category.percentage}%</p>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${categoryStats.length === 0 ? `
+                                        <div class="text-center py-8">
+                                            <div class="text-slate-400 dark:text-slate-500 text-4xl mb-4">🏷️</div>
+                                            <p class="text-slate-500 dark:text-slate-400">No categories found</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Recent Activity -->
+                            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Recent Activity</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Latest content additions</p>
+                                </div>
+                                <div class="p-6">
+                                    ${recentActivity.slice(0, 8).map((activity, index) => `
+                                        <div class="flex items-start space-x-3 py-3 ${index < 7 ? 'border-b border-slate-200 dark:border-slate-700' : ''}">
+                                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                                activity.type === 'article'
+                                                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
+                                                    : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300'
+                                            }">
+                                                ${activity.type === 'article' ? '📄' : '🖼️'}
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                    ${activity.title}
+                                                </p>
+                                                <div class="flex items-center space-x-2 mt-1">
+                                                    ${activity.type === 'article' ? `
+                                                        <span class="text-xs px-2 py-1 rounded-full ${
+                                                            activity.status === 'PUBLISHED'
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                                                        }">
+                                                            ${activity.status}
+                                                        </span>
+                                                        <span class="text-xs text-slate-500 dark:text-slate-400">by ${activity.author}</span>
+                                                    ` : `
+                                                        ${activity.photographer ? `<span class="text-xs text-slate-500 dark:text-slate-400">by ${activity.photographer}</span>` : ''}
+                                                    `}
+                                                </div>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                    ${new Date(activity.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${recentActivity.length === 0 ? `
+                                        <div class="text-center py-8">
+                                            <div class="text-slate-400 dark:text-slate-500 text-4xl mb-4">📊</div>
+                                            <p class="text-slate-500 dark:text-slate-400">No recent activity</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gallery Analytics -->
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg admin-card">
+                            <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                                <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-200">Gallery Analytics</h3>
+                                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Image and media statistics</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div class="text-center">
+                                        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">${galleryStats.totalImages}</div>
+                                        <div class="text-sm text-slate-600 dark:text-slate-400 mt-1">Total Images</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-bold text-green-600 dark:text-green-400">${galleryStats.stackGroups}</div>
+                                        <div class="text-sm text-slate-600 dark:text-slate-400 mt-1">Image Stacks</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">${galleryStats.singleImages}</div>
+                                        <div class="text-sm text-slate-600 dark:text-slate-400 mt-1">Single Images</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-bold text-orange-600 dark:text-orange-400">${contentStats.totalGalleryCategories}</div>
+                                        <div class="text-sm text-slate-600 dark:text-slate-400 mt-1">Categories</div>
+                                    </div>
+                                </div>
+                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                                        <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-2">Image Metadata</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">With Location:</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">${galleryStats.imagesWithLocation}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">With Photographer:</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">${galleryStats.imagesWithPhotographer}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Completion Rate:</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">
+                                                    ${galleryStats.totalImages > 0 ? Math.round(((galleryStats.imagesWithLocation + galleryStats.imagesWithPhotographer) / (galleryStats.totalImages * 2)) * 100) : 0}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                                        <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-2">Recent Activity</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">New Articles (30d):</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">${analytics.recentArticles}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">New Images (30d):</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">${analytics.recentGalleryItems}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Growth Rate:</span>
+                                                <span class="font-medium text-green-600 dark:text-green-400">
+                                                    ${analytics.recentArticles + analytics.recentGalleryItems > 0 ? '+' : ''}${analytics.recentArticles + analytics.recentGalleryItems} items
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
+
+                // Initialize charts after DOM is updated
+                setTimeout(() => {
+                    this.initializeAnalyticsCharts(analytics);
+                }, 100);
+            }
+
+            initializeAnalyticsCharts(analytics) {
+                const { publishingTimeline, categoryStats } = analytics;
+
+                // Publishing Timeline Chart
+                const timelineCtx = document.getElementById('publishing-timeline-chart');
+                if (timelineCtx) {
+                    new Chart(timelineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: publishingTimeline.map(item => item.month),
+                            datasets: [
+                                {
+                                    label: 'Published Articles',
+                                    data: publishingTimeline.map(item => item.published),
+                                    borderColor: '#3B82F6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#3B82F6',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 5
+                                },
+                                {
+                                    label: 'Draft Articles',
+                                    data: publishingTimeline.map(item => item.drafts),
+                                    borderColor: '#F59E0B',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                    borderWidth: 2,
+                                    fill: false,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#F59E0B',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 20,
+                                        color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#374151'
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#3B82F6',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                                    },
+                                    ticks: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                                    },
+                                    ticks: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280',
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+
+                // Category Distribution Chart
+                const categoryCtx = document.getElementById('category-distribution-chart');
+                if (categoryCtx && categoryStats.length > 0) {
+                    const colors = [
+                        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                        '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
+                    ];
+
+                    new Chart(categoryCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: categoryStats.map(cat => cat.name),
+                            datasets: [{
+                                data: categoryStats.map(cat => cat.totalArticles),
+                                backgroundColor: categoryStats.map((cat, index) =>
+                                    cat.color || colors[index % colors.length]
+                                ),
+                                borderColor: '#ffffff',
+                                borderWidth: 2,
+                                hoverBorderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 15,
+                                        color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#374151',
+                                        generateLabels: function(chart) {
+                                            const data = chart.data;
+                                            if (data.labels.length && data.datasets.length) {
+                                                return data.labels.map((label, i) => {
+                                                    const dataset = data.datasets[0];
+                                                    const value = dataset.data[i];
+                                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+
+                                                    return {
+                                                        text: `${label} (${percentage}%)`,
+                                                        fillStyle: dataset.backgroundColor[i],
+                                                        strokeStyle: dataset.borderColor,
+                                                        lineWidth: dataset.borderWidth,
+                                                        hidden: false,
+                                                        index: i
+                                                    };
+                                                });
+                                            }
+                                            return [];
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#ffffff',
+                                    bodyColor: '#ffffff',
+                                    borderColor: '#3B82F6',
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${value} articles (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            cutout: '60%',
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true
+                            }
+                        }
+                    });
+                }
             }
 
             async loadSettings() {
