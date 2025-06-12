@@ -3189,17 +3189,17 @@
                                     </svg>
                                     <span>New Category</span>
                                 </button>
-                                <button onclick="adminDashboard.createGalleryItem()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg btn-primary flex items-center space-x-2">
+                                <button onclick="adminDashboard.createMultiImageEvent()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg btn-primary flex items-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                                     </svg>
                                     <span>Multi-Image Event</span>
                                 </button>
-                                <button onclick="adminDashboard.createGalleryItem()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg btn-primary flex items-center space-x-2">
+                                <button onclick="adminDashboard.createSingleImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg btn-primary flex items-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
-                                    <span>Add Event</span>
+                                    <span>Add Single Image</span>
                                 </button>
                             </div>
                         </div>
@@ -3295,7 +3295,7 @@
                                                     <div class="text-slate-400 dark:text-slate-500 text-4xl mb-4">📚</div>
                                                     <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No image stacks yet</h3>
                                                     <p class="text-slate-500 dark:text-slate-400 mb-4">Create stacks by grouping multiple images for the same event</p>
-                                                    <button onclick="adminDashboard.createGalleryItem()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Add Images to Create Stack</button>
+                                                    <button onclick="adminDashboard.createMultiImageEvent()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Add Images to Create Stack</button>
                                                 </div>
                                             `;
                                         }
@@ -3355,7 +3355,7 @@
                                         <div class="text-slate-400 dark:text-slate-500 text-6xl mb-4">🖼️</div>
                                         <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No gallery items yet</h3>
                                         <p class="text-slate-500 dark:text-slate-400 mb-6">Get started by adding your first image to the gallery</p>
-                                        <button onclick="adminDashboard.createGalleryItem()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg">Add Your First Image</button>
+                                        <button onclick="adminDashboard.createSingleImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg">Add Your First Image</button>
                                     </div>
                                 `}
                             </div>
@@ -3508,10 +3508,23 @@
             }
 
             // Gallery Item Management Methods
-            async createGalleryItem() {
-                console.log('🆕 Opening gallery item creation modal...');
+            async createSingleImage() {
+                console.log('📸 Opening single image creation modal...');
                 this.currentEditingGalleryItem = null;
-                this.openGalleryEditor();
+                this.openGalleryEditor('single');
+            }
+
+            async createMultiImageEvent() {
+                console.log('📚 Opening multi-image event creation modal...');
+                this.currentEditingGalleryItem = null;
+                this.openGalleryEditor('multi');
+            }
+
+            // Legacy function for backward compatibility
+            async createGalleryItem() {
+                console.log('🆕 Opening gallery item creation modal (legacy)...');
+                this.currentEditingGalleryItem = null;
+                this.openGalleryEditor('multi');
             }
 
 
@@ -3544,13 +3557,19 @@
                 }
             }
 
-            openGalleryEditor(item = null) {
+            openGalleryEditor(mode = 'multi', item = null) {
                 const modal = document.getElementById('gallery-editor-modal');
                 const title = document.getElementById('gallery-editor-modal-title');
                 const form = document.getElementById('gallery-editor-form');
 
-                // Set modal title
-                title.textContent = item ? 'Edit Gallery Event' : 'Add Gallery Event';
+                // Set modal title based on mode
+                if (item) {
+                    title.textContent = 'Edit Gallery Item';
+                } else if (mode === 'single') {
+                    title.textContent = 'Add Single Image';
+                } else {
+                    title.textContent = 'Add Multi-Image Event';
+                }
 
                 // Load categories
                 this.loadGalleryEditorData();
@@ -3560,7 +3579,7 @@
                     this.populateGalleryForm(item);
                 } else {
                     form.reset();
-                    this.resetImageInputs();
+                    this.resetImageInputs(mode);
                 }
 
                 // Show modal
@@ -3595,8 +3614,9 @@
 
 
 
-            resetImageInputs() {
+            resetImageInputs(mode = 'multi') {
                 const container = document.getElementById('images-container');
+                const addButton = document.getElementById('add-image-btn');
 
                 // Remove all but the first image input
                 const groups = container.querySelectorAll('.image-input-group');
@@ -3613,8 +3633,20 @@
                 const preview = firstGroup.querySelector('.image-preview');
                 preview.classList.add('hidden');
 
-                // Show add button
-                document.getElementById('add-image-btn').style.display = 'flex';
+                // Update first group title based on mode
+                const firstGroupTitle = firstGroup.querySelector('h4');
+                if (mode === 'single') {
+                    firstGroupTitle.textContent = '📸 Image';
+                    // Hide the "Add Another Image" button for single image mode
+                    addButton.style.display = 'none';
+                    // Update the button text and description
+                    const buttonText = addButton.parentElement.querySelector('span:last-child');
+                    if (buttonText) buttonText.textContent = 'Single image only';
+                } else {
+                    firstGroupTitle.textContent = '📸 Main Image (Cover)';
+                    // Show the "Add Another Image" button for multi-image mode
+                    addButton.style.display = 'flex';
+                }
 
                 // Setup listeners
                 this.setupImageInputListeners();
