@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Cache Buster: v2025.01.12.15.30 -->
+<!-- Cache Buster: v2025.01.12.16.45 -->
 <html lang="en" style="scroll-behavior: smooth;">
 <head>
     <meta charset="UTF-8">
@@ -3028,74 +3028,7 @@
                 }
             }
 
-            async saveArticle() {
-                const form = document.getElementById('article-editor-form');
-                const formData = new FormData(form);
-                const saveBtn = document.getElementById('save-btn-text');
-                const saveSpinner = document.getElementById('save-spinner');
-                const saveStatus = document.getElementById('save-status');
 
-                // Validate required fields
-                const title = formData.get('title');
-                const summary = formData.get('summary');
-                const authorId = formData.get('authorId');
-                const categoryId = formData.get('categoryId');
-                const content = document.getElementById('article-content').innerHTML;
-
-                if (!title || !summary || !authorId || !categoryId || !content.trim()) {
-                    this.showToast('Please fill in all required fields', 'error');
-                    return;
-                }
-
-                try {
-                    saveBtn.textContent = 'Saving...';
-                    saveSpinner.classList.remove('hidden');
-                    saveStatus.textContent = 'Saving article...';
-
-                    const articleData = {
-                        title: title.trim(),
-                        summary: summary.trim(),
-                        content: content,
-                        imageUrl: formData.get('imageUrl') || null,
-                        authorId: authorId,
-                        categoryId: categoryId,
-                        status: formData.get('status') || 'DRAFT'
-                    };
-
-                    let response;
-                    if (this.currentEditingArticle) {
-                        // Update existing article
-                        response = await this.makeAPICall(`/articles/${this.currentEditingArticle.id}`, 'PUT', articleData);
-                    } else {
-                        // Create new article
-                        response = await this.makeAPICall('/articles', 'POST', articleData);
-                    }
-
-                    if (response.success) {
-                        this.showToast(
-                            this.currentEditingArticle ? 'Article updated successfully!' : 'Article created successfully!',
-                            'success'
-                        );
-                        this.closeArticleEditor();
-
-                        // Refresh the articles list
-                        if (this.currentSection === 'articles') {
-                            this.loadArticles();
-                        } else if (this.currentSection === 'dashboard') {
-                            this.loadDashboard();
-                        }
-                    } else {
-                        throw new Error(response.error?.message || 'Failed to save article');
-                    }
-                } catch (error) {
-                    console.error('Error saving article:', error);
-                    this.showToast('Error saving article: ' + error.message, 'error');
-                } finally {
-                    saveBtn.textContent = 'Save Article';
-                    saveSpinner.classList.add('hidden');
-                    saveStatus.textContent = '';
-                }
-            }
 
             formatText(command) {
                 try {
@@ -3737,10 +3670,21 @@
                     let response;
                     if (this.currentEditingArticle) {
                         // Update existing article
-                        response = await this.updateArticleInSupabase(this.currentEditingArticle.id, articleData);
+                        const { data, error } = await this.supabase
+                            .from('articles')
+                            .update(articleData)
+                            .eq('id', this.currentEditingArticle.id)
+                            .select();
+
+                        response = { success: !error, data, error };
                     } else {
                         // Create new article
-                        response = await this.createArticleInSupabase(articleData);
+                        const { data, error } = await this.supabase
+                            .from('articles')
+                            .insert([articleData])
+                            .select();
+
+                        response = { success: !error, data, error };
                     }
 
                     if (response.success) {
@@ -3753,7 +3697,7 @@
                         this.closeArticleEditor();
                         this.loadArticles(); // Refresh the articles list
                     } else {
-                        throw new Error(response.error || 'Failed to save article');
+                        throw new Error(response.error?.message || 'Failed to save article');
                     }
                 } catch (error) {
                     console.error('Error saving article:', error);
