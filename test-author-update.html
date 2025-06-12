@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Author Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Test Author Update Functionality</h1>
+    
+    <div>
+        <button onclick="testGetAuthors()">Get Authors</button>
+        <button onclick="testUpdateAuthor()">Update First Author</button>
+        <button onclick="testCreateAuthor()">Create New Author</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        // Direct Supabase API test
+        const SUPABASE_URL = 'https://zrsfmghkjhxkjjzkigck.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM';
+
+        let authors = [];
+
+        async function supabaseRequest(endpoint, options = {}) {
+            const url = `${SUPABASE_URL}/rest/v1${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Prefer': 'return=representation',
+                ...options.headers
+            };
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                return { data, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        }
+
+        window.testGetAuthors = async function() {
+            try {
+                const result = await supabaseRequest('/authors?isActive=eq.true&order=name.asc');
+
+                if (result.error) {
+                    addResult('error', `Error getting authors: ${result.error.message}`);
+                    return;
+                }
+
+                authors = result.data || [];
+                addResult('success', `Found ${authors.length} authors: ${JSON.stringify(authors.slice(0, 2), null, 2)}`);
+            } catch (error) {
+                addResult('error', `Error getting authors: ${error.message}`);
+            }
+        };
+
+        window.testUpdateAuthor = async function() {
+            if (authors.length === 0) {
+                addResult('error', 'No authors found. Run "Get Authors" first.');
+                return;
+            }
+
+            try {
+                const firstAuthor = authors[0];
+                const updateData = {
+                    name: firstAuthor.name,
+                    email: firstAuthor.email,
+                    bio: (firstAuthor.bio || '') + ' [Updated at ' + new Date().toLocaleTimeString() + ']',
+                    avatarUrl: firstAuthor.avatarUrl
+                };
+
+                const result = await supabaseRequest(`/authors?id=eq.${firstAuthor.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(updateData)
+                });
+
+                if (result.error) {
+                    addResult('error', `Failed to update author: ${result.error.message}`);
+                } else {
+                    addResult('success', `Successfully updated author: ${JSON.stringify(result.data, null, 2)}`);
+                }
+            } catch (error) {
+                addResult('error', `Error updating author: ${error.message}`);
+            }
+        };
+
+        window.testCreateAuthor = async function() {
+            try {
+                const newAuthorData = {
+                    name: 'Test Author ' + Date.now(),
+                    email: `test${Date.now()}@example.com`,
+                    bio: 'This is a test author created at ' + new Date().toLocaleString(),
+                    avatarUrl: 'https://via.placeholder.com/150'
+                };
+
+                const result = await supabaseRequest('/authors', {
+                    method: 'POST',
+                    body: JSON.stringify(newAuthorData)
+                });
+
+                if (result.error) {
+                    addResult('error', `Failed to create author: ${result.error.message}`);
+                } else {
+                    addResult('success', `Successfully created author: ${JSON.stringify(result.data, null, 2)}`);
+                }
+            } catch (error) {
+                addResult('error', `Error creating author: ${error.message}`);
+            }
+        };
+
+        function addResult(type, message) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${type.toUpperCase()}:</strong> ${message}`;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Auto-test on load
+        setTimeout(() => {
+            testGetAuthors();
+        }, 1000);
+    </script>
+</body>
+</html>

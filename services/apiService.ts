@@ -261,6 +261,23 @@ class ApiService {
   }
 
   async createArticle(articleData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.createArticle(articleData);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to create article' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/articles', {
       method: 'POST',
       body: JSON.stringify(articleData),
@@ -268,6 +285,23 @@ class ApiService {
   }
 
   async updateArticle(id: string, articleData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.updateArticle(id, articleData);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to update article' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/articles/${id}`, {
       method: 'PUT',
       body: JSON.stringify(articleData),
@@ -275,6 +309,23 @@ class ApiService {
   }
 
   async deleteArticle(id: string): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.deleteArticle(id);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to delete article' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/articles/${id}`, {
       method: 'DELETE',
     });
@@ -477,6 +528,23 @@ class ApiService {
   }
 
   async createAuthor(authorData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.createAuthor(authorData);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to create author' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/authors', {
       method: 'POST',
       body: JSON.stringify(authorData),
@@ -484,6 +552,26 @@ class ApiService {
   }
 
   async updateAuthor(id: string, authorData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      console.log('Updating author via Supabase:', id, authorData);
+      const result = await supabaseService.updateAuthor(id, authorData);
+      console.log('Supabase update result:', result);
+
+      if (result.error) {
+        console.error('Supabase update error:', result.error);
+        return {
+          success: false,
+          error: { message: result.error.message || 'Failed to update author' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/authors/${id}`, {
       method: 'PUT',
       body: JSON.stringify(authorData),
@@ -491,6 +579,23 @@ class ApiService {
   }
 
   async deleteAuthor(id: string): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.deleteAuthor(id);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to delete author' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/authors/${id}`, {
       method: 'DELETE',
     });
@@ -523,6 +628,23 @@ class ApiService {
   }
 
   async createCategory(categoryData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.createCategory(categoryData);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to create category' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request('/categories', {
       method: 'POST',
       body: JSON.stringify(categoryData),
@@ -530,6 +652,23 @@ class ApiService {
   }
 
   async updateCategory(id: string, categoryData: any): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.updateCategory(id, categoryData);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to update category' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(categoryData),
@@ -537,6 +676,23 @@ class ApiService {
   }
 
   async deleteCategory(id: string): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.deleteCategory(id);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to delete category' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
     return this.request(`/categories/${id}`, {
       method: 'DELETE',
     });

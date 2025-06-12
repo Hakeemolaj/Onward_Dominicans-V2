@@ -29,9 +29,8 @@ export const getAuthors = async (
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    // Build where clause - allow admin to see all authors
-    const includeInactive = req.query.includeInactive === 'true';
-    const where: any = includeInactive ? {} : { isActive: true };
+    // Build where clause
+    const where: any = { isActive: true };
 
     if (search) {
       where.OR = [
@@ -42,8 +41,8 @@ export const getAuthors = async (
 
     // Use raw SQL directly to avoid prepared statement conflicts
     console.log('🔄 Using raw SQL for authors to avoid prepared statement conflicts');
-    const total = await rawSqlFallbacks.countAuthors(includeInactive);
-    const authors = await rawSqlFallbacks.getAuthors(skip, take, sortBy, sortOrder, includeInactive);
+    const total = await rawSqlFallbacks.countAuthors();
+    const authors = await rawSqlFallbacks.getAuthors(skip, take, sortBy, sortOrder);
 
     const totalPages = Math.ceil(total / take);
     const meta: PaginationMeta = {
@@ -77,75 +76,37 @@ export const getAuthor = async (
   try {
     const { id } = req.params;
 
-    // Use safePrismaOperation to handle potential prepared statement conflicts
-    const author = await safePrismaOperation(
-      async () => {
-        return await db.prisma.author.findUnique({
-          where: { id },
-          include: {
-            articles: {
-              where: { status: 'PUBLISHED' },
+    const author = await db.prisma.author.findUnique({
+      where: { id },
+      include: {
+        articles: {
+          where: { status: 'PUBLISHED' },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            summary: true,
+            imageUrl: true,
+            publishedAt: true,
+            category: {
               select: {
                 id: true,
-                title: true,
+                name: true,
                 slug: true,
-                summary: true,
-                imageUrl: true,
-                publishedAt: true,
-                category: {
-                  select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                  },
-                },
-              },
-              orderBy: { publishedAt: 'desc' },
-            },
-            _count: {
-              select: {
-                articles: {
-                  where: { status: 'PUBLISHED' },
-                },
               },
             },
           },
-        });
+          orderBy: { publishedAt: 'desc' },
+        },
+        _count: {
+          select: {
+            articles: {
+              where: { status: 'PUBLISHED' },
+            },
+          },
+        },
       },
-      async (client) => {
-        return await client.author.findUnique({
-          where: { id },
-          include: {
-            articles: {
-              where: { status: 'PUBLISHED' },
-              select: {
-                id: true,
-                title: true,
-                slug: true,
-                summary: true,
-                imageUrl: true,
-                publishedAt: true,
-                category: {
-                  select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                  },
-                },
-              },
-              orderBy: { publishedAt: 'desc' },
-            },
-            _count: {
-              select: {
-                articles: {
-                  where: { status: 'PUBLISHED' },
-                },
-              },
-            },
-          },
-        });
-      }
-    );
+    });
 
     if (!author) {
       throw createError('Author not found', 404);

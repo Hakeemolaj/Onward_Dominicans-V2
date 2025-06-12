@@ -38,7 +38,6 @@ const getAuthorsValidation = [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('sortBy').optional().isIn(['name', 'createdAt', 'updatedAt']),
   query('sortOrder').optional().isIn(['asc', 'desc']),
-  query('includeInactive').optional().isBoolean().withMessage('includeInactive must be a boolean'),
 ];
 
 // Public routes

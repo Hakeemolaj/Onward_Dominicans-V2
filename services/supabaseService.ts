@@ -60,14 +60,77 @@ class SupabaseService {
     return this.request(`/articles?slug=eq.${slug}&select=*,author:authors(*),category:categories(*),tags:_ArticleToTag(tag:tags(*))`);
   }
 
-  // Categories
-  async getCategories() {
-    return this.request('/categories?isActive=eq.true&order=name.asc');
+  async createArticle(articleData: any) {
+    return this.request('/articles', {
+      method: 'POST',
+      body: JSON.stringify(articleData)
+    });
+  }
+
+  async updateArticle(id: string, articleData: any) {
+    return this.request(`/articles?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(articleData)
+    });
+  }
+
+  async deleteArticle(id: string) {
+    return this.request(`/articles?id=eq.${id}`, {
+      method: 'DELETE'
+    });
   }
 
   // Authors
   async getAuthors() {
     return this.request('/authors?isActive=eq.true&order=name.asc');
+  }
+
+  async createAuthor(authorData: any) {
+    return this.request('/authors', {
+      method: 'POST',
+      body: JSON.stringify(authorData)
+    });
+  }
+
+  async updateAuthor(id: string, authorData: any) {
+    console.log('SupabaseService.updateAuthor called with:', id, authorData);
+    const result = await this.request(`/authors?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(authorData)
+    });
+    console.log('SupabaseService.updateAuthor result:', result);
+    return result;
+  }
+
+  async deleteAuthor(id: string) {
+    return this.request(`/authors?id=eq.${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Categories
+  async getCategories() {
+    return this.request('/categories?isActive=eq.true&order=name.asc');
+  }
+
+  async createCategory(categoryData: any) {
+    return this.request('/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData)
+    });
+  }
+
+  async updateCategory(id: string, categoryData: any) {
+    return this.request(`/categories?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(categoryData)
+    });
+  }
+
+  async deleteCategory(id: string) {
+    return this.request(`/categories?id=eq.${id}`, {
+      method: 'DELETE'
+    });
   }
 
   // Gallery

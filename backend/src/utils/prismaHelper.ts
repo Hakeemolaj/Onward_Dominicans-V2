@@ -104,19 +104,17 @@ export async function safePrismaOperation<T>(
  * Raw SQL fallback functions to bypass Prisma prepared statement issues
  */
 export const rawSqlFallbacks = {
-  async countAuthors(includeInactive: boolean = false): Promise<number> {
-    const whereClause = includeInactive ? '' : 'WHERE "isActive" = true';
+  async countAuthors(): Promise<number> {
     const result = await db.prisma.$queryRawUnsafe<[{ count: bigint }]>(
-      `SELECT COUNT(*) as count FROM authors ${whereClause}`
+      'SELECT COUNT(*) as count FROM authors WHERE "isActive" = true'
     );
     return Number(result[0].count);
   },
 
-  async getAuthors(skip: number = 0, take: number = 10, sortBy: string = 'name', sortOrder: string = 'asc', includeInactive: boolean = false): Promise<any[]> {
+  async getAuthors(skip: number = 0, take: number = 10, sortBy: string = 'name', sortOrder: string = 'asc'): Promise<any[]> {
     // Use raw SQL with string interpolation for ORDER BY (safe since we control the values)
     const orderDirection = sortOrder === 'desc' ? 'DESC' : 'ASC';
     const orderColumn = sortBy === 'name' ? 'name' : 'name'; // Default to name for safety
-    const whereClause = includeInactive ? '' : 'WHERE a."isActive" = true';
 
     const query = `
       SELECT
@@ -131,7 +129,7 @@ export const rawSqlFallbacks = {
         CAST(COUNT(ar.id) as INTEGER) as article_count
       FROM authors a
       LEFT JOIN articles ar ON a.id = ar."authorId" AND ar.status = 'PUBLISHED'
-      ${whereClause}
+      WHERE a."isActive" = true
       GROUP BY a.id, a.name, a.email, a.bio, a."avatarUrl", a."isActive", a."createdAt", a."updatedAt"
       ORDER BY a.${orderColumn} ${orderDirection}
       LIMIT $1 OFFSET $2
