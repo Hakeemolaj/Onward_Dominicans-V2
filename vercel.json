@@ -4,15 +4,15 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/admin",
-      "destination": "/admin.html"
+      "source": "/nyegaman",
+      "destination": "/nyegaman.html"
     },
     {
-      "source": "/admin.html",
-      "destination": "/admin.html"
+      "source": "/nyegaman.html",
+      "destination": "/nyegaman.html"
     },
     {
-      "source": "/((?!api/|admin).*)",
+      "source": "/((?!api/|nyegaman).*)",
       "destination": "/index.html"
     }
   ],
