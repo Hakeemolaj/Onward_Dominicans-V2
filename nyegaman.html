@@ -7,6 +7,7 @@
     <title>Nyegaman Dashboard - Onward Dominicans (Production)</title>
     <link rel="stylesheet" href="./src/index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
       ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -3712,22 +3713,11 @@
                 try {
                     let response;
                     if (this.currentEditingArticle) {
-                        // Update existing article
-                        const { data, error } = await this.supabase
-                            .from('articles')
-                            .update(articleData)
-                            .eq('id', this.currentEditingArticle.id)
-                            .select();
-
-                        response = { success: !error, data, error };
+                        // Update existing article using existing Supabase method
+                        response = await this.updateArticleInSupabase(this.currentEditingArticle.id, articleData);
                     } else {
-                        // Create new article
-                        const { data, error } = await this.supabase
-                            .from('articles')
-                            .insert([articleData])
-                            .select();
-
-                        response = { success: !error, data, error };
+                        // Create new article using existing Supabase method
+                        response = await this.createArticleInSupabase(articleData);
                     }
 
                     if (response.success) {
