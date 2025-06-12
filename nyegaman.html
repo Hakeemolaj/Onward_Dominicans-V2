@@ -333,9 +333,14 @@
                     <!-- Bio -->
                     <div>
                         <label for="author-bio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Biography</label>
-                        <textarea id="author-bio" name="bio" rows="4"
+                        <textarea id="author-bio" name="bio" rows="4" maxlength="500"
                             class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            placeholder="Brief biography of the author..."></textarea>
+                            placeholder="Brief biography of the author..."
+                            oninput="adminDashboard.updateBioCharCount()"></textarea>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Optional - Brief description about the author</p>
+                            <span id="bio-char-count" class="text-xs text-slate-500 dark:text-slate-400">0/500</span>
+                        </div>
                     </div>
 
                     <!-- Status -->
@@ -1269,6 +1274,171 @@
                 }
             }
 
+            async getAuthorFromSupabase(id) {
+                try {
+                    console.log('🔄 Fetching author from Supabase:', id);
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/authors?id=eq.${id}`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Supabase request failed: ${response.status}`);
+                    }
+
+                    const authors = await response.json();
+                    const author = authors.length > 0 ? authors[0] : null;
+
+                    if (!author) {
+                        throw new Error('Author not found');
+                    }
+
+                    console.log('✅ Author loaded from Supabase:', author.name);
+
+                    return {
+                        success: true,
+                        data: author
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase author fetch failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async createAuthorInSupabase(authorData) {
+                try {
+                    console.log('🔄 Creating author in Supabase:', authorData);
+
+                    // Generate a unique ID for the author
+                    const authorId = 'author-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+                    const supabaseData = {
+                        id: authorId,
+                        name: authorData.name,
+                        email: authorData.email,
+                        bio: authorData.bio || null,
+                        avatarUrl: authorData.avatarUrl || null,
+                        isActive: authorData.isActive !== false, // Default to true
+                        createdBy: 'system-user-001'
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/authors`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase create failed: ${response.status} - ${error}`);
+                    }
+
+                    const createdAuthor = await response.json();
+                    console.log('✅ Author created in Supabase:', createdAuthor[0]?.name);
+
+                    return {
+                        success: true,
+                        data: createdAuthor[0] || supabaseData
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase author create failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async updateAuthorInSupabase(id, authorData) {
+                try {
+                    console.log('🔄 Updating author in Supabase:', id, authorData);
+
+                    const supabaseData = {
+                        name: authorData.name,
+                        email: authorData.email,
+                        bio: authorData.bio || null,
+                        avatarUrl: authorData.avatarUrl || null,
+                        isActive: authorData.isActive !== false,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/authors?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase update failed: ${response.status} - ${error}`);
+                    }
+
+                    const updatedAuthor = await response.json();
+                    console.log('✅ Author updated in Supabase:', updatedAuthor[0]?.name);
+
+                    return {
+                        success: true,
+                        data: updatedAuthor[0] || { id, ...supabaseData }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase author update failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async deleteAuthorFromSupabase(id) {
+                try {
+                    console.log('🔄 Deleting author from Supabase:', id);
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/authors?id=eq.${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase delete failed: ${response.status} - ${error}`);
+                    }
+
+                    console.log('✅ Author deleted from Supabase');
+
+                    return {
+                        success: true,
+                        data: { message: 'Author deleted successfully' }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase author delete failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
             async getCategoriesFromSupabase() {
                 try {
                     console.log('🔄 Fetching categories from Supabase...');
@@ -1313,12 +1483,35 @@
                         if (endpoint === '/authors' || endpoint.includes('/authors?')) {
                             return await this.getAuthorsFromSupabase();
                         }
+                        // Handle single author fetch
+                        const idMatch = endpoint.match(/\/authors\/([^\/]+)$/);
+                        if (idMatch) {
+                            return await this.getAuthorFromSupabase(idMatch[1]);
+                        }
                     }
 
-                    // For now, return success for other author operations
+                    if (method === 'POST' && endpoint === '/authors') {
+                        return await this.createAuthorInSupabase(data);
+                    }
+
+                    if (method === 'PUT') {
+                        const idMatch = endpoint.match(/\/authors\/([^\/]+)$/);
+                        if (idMatch) {
+                            return await this.updateAuthorInSupabase(idMatch[1], data);
+                        }
+                    }
+
+                    if (method === 'DELETE') {
+                        const idMatch = endpoint.match(/\/authors\/([^\/]+)$/);
+                        if (idMatch) {
+                            return await this.deleteAuthorFromSupabase(idMatch[1]);
+                        }
+                    }
+
+                    // Fallback for unhandled operations
                     return {
-                        success: true,
-                        data: { message: 'Author operation completed' }
+                        success: false,
+                        error: { message: `Unsupported author operation: ${method} ${endpoint}` }
                     };
                 } catch (error) {
                     console.error('❌ Supabase author operation failed:', error);
@@ -2767,6 +2960,9 @@
                 if (author.avatarUrl) {
                     this.updateAvatarPreview(author.avatarUrl);
                 }
+
+                // Update bio character count
+                this.updateBioCharCount();
             }
 
             async saveAuthor() {
@@ -2781,7 +2977,20 @@
                 const email = formData.get('email');
 
                 if (!name || !email) {
-                    this.showToast('Please fill in all required fields', 'error');
+                    this.showToast('Please fill in all required fields (Name and Email)', 'error');
+                    return;
+                }
+
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email.trim())) {
+                    this.showToast('Please enter a valid email address', 'error');
+                    return;
+                }
+
+                // Validate name length
+                if (name.trim().length < 2) {
+                    this.showToast('Author name must be at least 2 characters long', 'error');
                     return;
                 }
 
@@ -2792,11 +3001,17 @@
 
                     const authorData = {
                         name: name.trim(),
-                        email: email.trim(),
-                        bio: formData.get('bio') || null,
-                        avatarUrl: formData.get('avatarUrl') || null,
+                        email: email.trim().toLowerCase(),
+                        bio: formData.get('bio')?.trim() || null,
+                        avatarUrl: formData.get('avatarUrl')?.trim() || null,
                         isActive: formData.get('isActive') === 'true'
                     };
+
+                    // Validate avatar URL if provided
+                    if (authorData.avatarUrl && !this.isValidUrl(authorData.avatarUrl)) {
+                        this.showToast('Please enter a valid avatar URL', 'error');
+                        return;
+                    }
 
                     let response;
                     if (this.currentEditingAuthor) {
@@ -2814,12 +3029,15 @@
                         );
                         this.closeAuthorEditor();
 
-                        // Refresh the authors list
+                        // Refresh the authors list and update dropdowns
                         if (this.currentSection === 'authors') {
                             this.loadAuthors();
                         } else if (this.currentSection === 'dashboard') {
                             this.loadDashboard();
                         }
+
+                        // Update author dropdowns in article editor
+                        this.loadAuthorDropdown();
                     } else {
                         throw new Error(response.error?.message || 'Failed to save author');
                     }
@@ -2847,6 +3065,54 @@
                     };
                 } else {
                     preview.classList.add('hidden');
+                }
+            }
+
+            async loadAuthorDropdown() {
+                try {
+                    const authorSelect = document.getElementById('article-author');
+                    if (!authorSelect) return;
+
+                    // Fetch latest authors
+                    const response = await this.makeAPICall('/authors');
+                    if (response.success && response.data) {
+                        // Clear existing options
+                        authorSelect.innerHTML = '<option value="">Select an author...</option>';
+
+                        // Add authors to dropdown
+                        response.data.forEach(author => {
+                            if (author.isActive !== false) { // Only show active authors
+                                const option = document.createElement('option');
+                                option.value = author.id;
+                                option.textContent = author.name;
+                                authorSelect.appendChild(option);
+                            }
+                        });
+
+                        console.log(`✅ Updated author dropdown with ${response.data.length} authors`);
+                    }
+                } catch (error) {
+                    console.error('Error loading author dropdown:', error);
+                }
+            }
+
+            updateBioCharCount() {
+                const bioField = document.getElementById('author-bio');
+                const charCount = document.getElementById('bio-char-count');
+
+                if (bioField && charCount) {
+                    const currentLength = bioField.value.length;
+                    const maxLength = 500;
+                    charCount.textContent = `${currentLength}/${maxLength}`;
+
+                    // Change color based on character count
+                    if (currentLength > maxLength * 0.9) {
+                        charCount.className = 'text-xs text-red-500 dark:text-red-400';
+                    } else if (currentLength > maxLength * 0.7) {
+                        charCount.className = 'text-xs text-yellow-500 dark:text-yellow-400';
+                    } else {
+                        charCount.className = 'text-xs text-slate-500 dark:text-slate-400';
+                    }
                 }
             }
 
@@ -3432,6 +3698,30 @@
                     });
                 }
 
+                // Bio character count
+                const bioInput = document.getElementById('author-bio');
+                if (bioInput) {
+                    bioInput.addEventListener('input', () => {
+                        this.updateBioCharCount();
+                    });
+                    // Initialize character count
+                    this.updateBioCharCount();
+                }
+
+                // Email validation on blur
+                const emailInput = document.getElementById('author-email');
+                if (emailInput) {
+                    emailInput.addEventListener('blur', (e) => {
+                        const email = e.target.value.trim();
+                        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                            e.target.style.borderColor = '#ef4444';
+                            this.showToast('Please enter a valid email address', 'warning');
+                        } else {
+                            e.target.style.borderColor = '';
+                        }
+                    });
+                }
+
                 // Close modal when clicking outside
                 const modal = document.getElementById('author-editor-modal');
                 if (modal) {
@@ -3450,6 +3740,13 @@
                         this.saveAuthor();
                     });
                 }
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                        this.closeAuthorEditor();
+                    }
+                });
             }
 
             setupGalleryEditors() {
