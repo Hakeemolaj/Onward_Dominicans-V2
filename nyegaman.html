@@ -2151,8 +2151,9 @@
                     this.authors = authorsResponse.data || [];
                     this.categories = categoriesResponse.data || [];
 
-                    // Get the most recent published article as featured
-                    this.featuredArticle = this.articles.find(a => a.status === 'PUBLISHED') || null;
+                    // Get the featured article (or most recent published if none is featured)
+                    this.featuredArticle = this.articles.find(a => a.isFeatured === true) ||
+                                          this.articles.find(a => a.status === 'PUBLISHED') || null;
 
                     console.log(`✅ Loaded ${this.articles.length} articles, ${this.authors.length} authors, and ${this.categories.length} categories from Supabase`);
                     console.log(`⭐ Featured article:`, this.featuredArticle?.title || 'None');
@@ -2814,7 +2815,13 @@
             async setFeaturedArticle(articleId) {
                 try {
                     console.log('⭐ Setting article as featured:', articleId);
-                    const response = await this.makeAPICall(`/articles/${articleId}/feature`, 'POST');
+
+                    // First, unset any currently featured articles
+                    await this.unsetAllFeaturedArticles();
+
+                    // Then set this article as featured
+                    const response = await this.setFeaturedArticleInSupabase(articleId);
+
                     if (response.success) {
                         this.showToast('Article set as featured successfully!', 'success');
                         this.loadArticles(); // Refresh the list
@@ -2828,6 +2835,71 @@
                 } catch (error) {
                     console.error('Error setting featured article:', error);
                     this.showToast('Error setting article as featured', 'error');
+                }
+            }
+
+            async setFeaturedArticleInSupabase(articleId) {
+                try {
+                    console.log('🔄 Setting article as featured in Supabase:', articleId);
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/articles?id=eq.${articleId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            isFeatured: true
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase update failed: ${response.status} - ${error}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Article set as featured in Supabase:', result);
+
+                    return {
+                        success: true,
+                        data: result[0]
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase set featured article failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async unsetAllFeaturedArticles() {
+                try {
+                    console.log('🔄 Unsetting all featured articles in Supabase...');
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/articles?isFeatured=eq.true`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            isFeatured: false
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        console.warn('Failed to unset featured articles:', error);
+                    } else {
+                        console.log('✅ All featured articles unset');
+                    }
+                } catch (error) {
+                    console.warn('Error unsetting featured articles:', error);
                 }
             }
 
@@ -2938,7 +3010,12 @@
             async selectFeaturedArticle(articleId, modal) {
                 try {
                     console.log('⭐ Setting new featured article:', articleId);
-                    const response = await this.makeAPICall(`/articles/${articleId}/feature`, 'POST');
+
+                    // First, unset any currently featured articles
+                    await this.unsetAllFeaturedArticles();
+
+                    // Then set this article as featured
+                    const response = await this.setFeaturedArticleInSupabase(articleId);
 
                     if (response.success) {
                         this.showToast('Featured article updated successfully!', 'success');

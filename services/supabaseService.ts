@@ -80,6 +80,40 @@ class SupabaseService {
     });
   }
 
+  async getFeaturedArticle() {
+    try {
+      // First try to get an article that is explicitly marked as featured
+      const featuredResult = await this.request('/articles?isFeatured=eq.true&status=eq.PUBLISHED&select=*,author:authors(*),category:categories(*)&limit=1');
+
+      if (featuredResult.data && featuredResult.data.length > 0) {
+        return {
+          ...featuredResult,
+          data: featuredResult.data[0]
+        };
+      }
+
+      // If no featured article, get the most recent published article
+      const recentResult = await this.request('/articles?status=eq.PUBLISHED&select=*,author:authors(*),category:categories(*)&order=publishedAt.desc&limit=1');
+
+      if (recentResult.data && recentResult.data.length > 0) {
+        return {
+          ...recentResult,
+          data: recentResult.data[0]
+        };
+      }
+
+      return {
+        data: null,
+        error: null
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: { message: 'Failed to fetch featured article' }
+      };
+    }
+  }
+
   // Authors
   async getAuthors() {
     try {

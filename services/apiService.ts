@@ -333,12 +333,8 @@ class ApiService {
 
   async getFeaturedArticle(): Promise<ApiResponse> {
     if (useSupabase()) {
-      // For Supabase, get the most recent published article as featured
-      const result = await supabaseService.getArticles({
-        limit: 1,
-        offset: 0,
-        status: 'PUBLISHED'
-      });
+      // Use the dedicated getFeaturedArticle method
+      const result = await supabaseService.getFeaturedArticle();
 
       if (result.error) {
         return {
@@ -348,10 +344,9 @@ class ApiService {
         };
       }
 
-      const article = result.data && result.data.length > 0 ? result.data[0] : null;
       return {
         success: true,
-        data: article,
+        data: result.data,
         timestamp: new Date().toISOString()
       };
     }
