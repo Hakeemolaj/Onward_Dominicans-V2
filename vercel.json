@@ -4,15 +4,15 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/admin",
-      "destination": "/admin.html"
+      "source": "/secret",
+      "destination": "/secret.html"
     },
     {
-      "source": "/admin.html",
-      "destination": "/admin.html"
+      "source": "/secret.html",
+      "destination": "/secret.html"
     },
     {
-      "source": "/((?!api/|admin).*)",
+      "source": "/((?!api/|secret).*)",
       "destination": "/index.html"
     }
   ],
