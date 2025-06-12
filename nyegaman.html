@@ -1668,18 +1668,22 @@
                 try {
                     console.log('🔄 Creating gallery item in Supabase:', itemData);
 
-                    const id = 'gallery-' + Date.now();
+                    const id = 'gallery-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
                     const supabaseData = {
                         id: id,
                         title: itemData.title,
-                        description: itemData.description,
+                        description: itemData.description || null,
                         imageUrl: itemData.imageUrl,
+                        thumbnailUrl: itemData.thumbnailUrl || null,
+                        photographer: itemData.photographer || null,
+                        dateTaken: itemData.dateTaken || null,
+                        location: itemData.location || null,
                         categoryId: itemData.categoryId,
-                        stackId: itemData.stackId,
+                        stackGroup: itemData.stackGroup || null,
                         stackOrder: itemData.stackOrder || 1,
                         isStackCover: itemData.isStackCover || false,
-                        createdBy: 'system-user-001'
+                        isActive: true
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items`, {
@@ -1720,13 +1724,17 @@
 
                     const supabaseData = {
                         title: itemData.title,
-                        description: itemData.description,
+                        description: itemData.description || null,
                         imageUrl: itemData.imageUrl,
+                        thumbnailUrl: itemData.thumbnailUrl || null,
+                        photographer: itemData.photographer || null,
+                        dateTaken: itemData.dateTaken || null,
+                        location: itemData.location || null,
                         categoryId: itemData.categoryId,
-                        stackId: itemData.stackId,
-                        stackOrder: itemData.stackOrder,
-                        isStackCover: itemData.isStackCover,
-                        updatedAt: new Date().toISOString()
+                        stackGroup: itemData.stackGroup || null,
+                        stackOrder: itemData.stackOrder || 1,
+                        isStackCover: itemData.isStackCover || false,
+                        isActive: itemData.isActive !== false
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items?id=eq.${id}`, {
@@ -1798,13 +1806,20 @@
                 try {
                     console.log('🔄 Creating gallery category in Supabase:', categoryData);
 
-                    const id = 'gallery-cat-' + Date.now();
+                    const id = 'gallery-cat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+                    // Generate slug from name
+                    const slug = categoryData.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
 
                     const supabaseData = {
                         id: id,
                         name: categoryData.name,
-                        description: categoryData.description,
-                        createdBy: 'system-user-001'
+                        slug: slug,
+                        description: categoryData.description || null,
+                        color: categoryData.color || '#3B82F6',
+                        isActive: true
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories`, {
@@ -1843,10 +1858,17 @@
                 try {
                     console.log('🔄 Updating gallery category in Supabase:', id, categoryData);
 
+                    // Generate slug from name if name is being updated
+                    const slug = categoryData.name ? categoryData.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '') : undefined;
+
                     const supabaseData = {
                         name: categoryData.name,
-                        description: categoryData.description,
-                        updatedAt: new Date().toISOString()
+                        slug: slug,
+                        description: categoryData.description || null,
+                        color: categoryData.color || '#3B82F6',
+                        isActive: categoryData.isActive !== false
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories?id=eq.${id}`, {
@@ -3114,6 +3136,34 @@
                 }
             }
 
+            async loadGalleryCategoryDropdown() {
+                try {
+                    const categorySelect = document.getElementById('gallery-category');
+                    if (!categorySelect) return;
+
+                    // Fetch latest gallery categories
+                    const response = await this.makeAPICall('/gallery-categories');
+                    if (response.success && response.data) {
+                        // Clear existing options
+                        categorySelect.innerHTML = '<option value="">Select a category...</option>';
+
+                        // Add categories to dropdown
+                        response.data.forEach(category => {
+                            if (category.isActive !== false) { // Only show active categories
+                                const option = document.createElement('option');
+                                option.value = category.id;
+                                option.textContent = category.name;
+                                categorySelect.appendChild(option);
+                            }
+                        });
+
+                        console.log(`✅ Updated gallery category dropdown with ${response.data.length} categories`);
+                    }
+                } catch (error) {
+                    console.error('Error loading gallery category dropdown:', error);
+                }
+            }
+
             async deleteAuthor(authorId) {
                 if (!confirm('Are you sure you want to delete this author?')) return;
 
@@ -4138,6 +4188,25 @@
                 const saveSpinner = document.getElementById('gallery-save-spinner');
                 const saveStatus = document.getElementById('gallery-save-status');
 
+                // Validate required fields
+                const title = formData.get('title')?.trim();
+                const categoryId = formData.get('categoryId');
+
+                if (!title) {
+                    this.showToast('Please enter a title for the gallery item', 'error');
+                    return;
+                }
+
+                if (title.length < 3) {
+                    this.showToast('Title must be at least 3 characters long', 'error');
+                    return;
+                }
+
+                if (!categoryId) {
+                    this.showToast('Please select a category', 'error');
+                    return;
+                }
+
                 // Get all image inputs with detailed logging
                 const imageGroups = document.querySelectorAll('.image-input-group');
                 console.log(`📸 Found ${imageGroups.length} image input groups`);
@@ -4188,13 +4257,6 @@
                 }
 
                 console.log(`✅ Collected ${images.length} valid images:`, images);
-
-                // Validate required fields
-                const title = formData.get('title');
-                if (!title) {
-                    this.showToast('Please fill in the event title', 'error');
-                    return;
-                }
 
                 if (images.length === 0) {
                     this.showToast('Please add at least one image', 'error');
@@ -4416,10 +4478,23 @@
                 const saveStatus = document.getElementById('gallery-category-save-status');
 
                 // Validate required fields
-                const name = formData.get('name');
+                const name = formData.get('name')?.trim();
+                const color = formData.get('color')?.trim();
 
                 if (!name) {
                     this.showToast('Please enter a category name', 'error');
+                    return;
+                }
+
+                if (name.length < 2) {
+                    this.showToast('Category name must be at least 2 characters long', 'error');
+                    return;
+                }
+
+                // Validate color format
+                const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+                if (color && !colorRegex.test(color)) {
+                    this.showToast('Please enter a valid hex color code', 'error');
                     return;
                 }
 
@@ -4429,9 +4504,9 @@
                     saveStatus.textContent = 'Saving gallery category...';
 
                     const categoryData = {
-                        name: name.trim(),
-                        description: formData.get('description') || null,
-                        color: formData.get('color') || '#3B82F6'
+                        name: name,
+                        description: formData.get('description')?.trim() || null,
+                        color: color || '#3B82F6'
                     };
 
                     let response;
@@ -4444,15 +4519,21 @@
                     }
 
                     if (response.success) {
-                        this.showToast(this.currentEditingGalleryCategory ? 'Gallery category updated successfully!' : 'Gallery category created successfully!', 'success');
+                        this.showToast(
+                            this.currentEditingGalleryCategory ? 'Gallery category updated successfully!' : 'Gallery category created successfully!',
+                            'success'
+                        );
                         this.closeGalleryCategoryEditor();
-                        this.loadGallery(); // Refresh the gallery
+
+                        // Refresh the gallery and update category dropdowns
+                        this.loadGallery();
+                        this.loadGalleryCategoryDropdown();
                     } else {
-                        this.showToast('Failed to save gallery category', 'error');
+                        throw new Error(response.error?.message || 'Failed to save gallery category');
                     }
                 } catch (error) {
                     console.error('Error saving gallery category:', error);
-                    this.showToast('Error saving gallery category', 'error');
+                    this.showToast('Error saving gallery category: ' + error.message, 'error');
                 } finally {
                     saveBtn.textContent = 'Save Category';
                     saveSpinner.classList.add('hidden');
