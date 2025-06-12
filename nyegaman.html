@@ -36,6 +36,12 @@
       html.dark .editor-btn { color: #94a3b8; }
       html.dark .editor-btn:hover { background-color: rgba(148, 163, 184, 0.1); color: #e2e8f0; }
       .editor-btn.active { background-color: #fbbf24; color: white; }
+      .editor-select { font-size: 0.875rem; min-width: 100px; }
+      .editor-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; background: white; }
+      html.dark .editor-fullscreen { background: #1e293b; }
+      .editor-content { transition: all 0.3s ease; }
+      .editor-content.html-mode { font-family: 'Courier New', monospace; background-color: #f8fafc; }
+      html.dark .editor-content.html-mode { background-color: #0f172a; color: #e2e8f0; }
       [contenteditable="true"]:empty:before { content: attr(placeholder); color: #9ca3af; font-style: italic; }
       [contenteditable="true"]:focus { outline: none; }
       .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
@@ -440,50 +446,264 @@
                         </div>
                     </div>
 
-                    <!-- Status -->
-                    <div>
-                        <label for="article-status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                        <select id="article-status" name="status"
-                            class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
-                            <option value="DRAFT">Draft</option>
-                            <option value="PENDING">Pending Review</option>
-                            <option value="PUBLISHED">Published</option>
-                        </select>
+                    <!-- Status and Scheduling -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Status -->
+                        <div>
+                            <label for="article-status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Status</label>
+                            <select id="article-status" name="status" onchange="adminDashboard.handleStatusChange(this.value)"
+                                class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
+                                <option value="DRAFT">Draft</option>
+                                <option value="PENDING">Pending Review</option>
+                                <option value="PUBLISHED">Published</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                            </select>
+                        </div>
+
+                        <!-- Publish Date/Time -->
+                        <div id="publish-date-container" class="hidden">
+                            <label for="article-publish-date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <span id="publish-date-label">Publish Date & Time</span>
+                            </label>
+                            <input type="datetime-local" id="article-publish-date" name="publishedAt"
+                                class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="publish-date-help">
+                                Leave empty to publish immediately
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- SEO Settings -->
+                    <div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">SEO & Social Media</h3>
+
+                        <!-- Meta Description -->
+                        <div class="mb-4">
+                            <label for="article-meta-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Meta Description
+                            </label>
+                            <textarea id="article-meta-description" name="metaDescription" rows="2" maxlength="160"
+                                class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                placeholder="Brief description for search engines (160 characters max)"
+                                oninput="adminDashboard.updateMetaCharCount()"></textarea>
+                            <div class="flex justify-between items-center mt-1">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Appears in search engine results</p>
+                                <span id="meta-char-count" class="text-xs text-slate-500 dark:text-slate-400">0/160</span>
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-4">
+                            <label for="article-tags" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Tags
+                            </label>
+                            <input type="text" id="article-tags" name="tags"
+                                class="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                placeholder="Enter tags separated by commas (e.g., community, culture, news)">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Separate multiple tags with commas</p>
+                        </div>
+
+                        <!-- Featured Article Toggle -->
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="article-featured" name="featured"
+                                class="w-4 h-4 text-yellow-500 bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-yellow-500">
+                            <label for="article-featured" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                Feature this article on homepage
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Content Editor -->
                     <div>
                         <label for="article-content" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Content *</label>
                         <div class="border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden">
-                            <!-- Editor Toolbar -->
-                            <div class="bg-slate-50 dark:bg-slate-700 border-b border-slate-300 dark:border-slate-600 p-3 flex flex-wrap gap-2">
-                                <button type="button" class="editor-btn" onclick="adminDashboard.formatText('bold')" title="Bold">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="editor-btn" onclick="adminDashboard.formatText('italic')" title="Italic">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4l4 16m-4-8h8"></path>
-                                    </svg>
-                                </button>
-                                <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
-                                <button type="button" class="editor-btn" onclick="adminDashboard.formatText('insertUnorderedList')" title="Bullet List">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="editor-btn" onclick="adminDashboard.formatText('insertOrderedList')" title="Numbered List">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </button>
+                            <!-- Enhanced Editor Toolbar -->
+                            <div class="bg-slate-50 dark:bg-slate-700 border-b border-slate-300 dark:border-slate-600 p-3">
+                                <!-- First Row: Basic Formatting -->
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <!-- Text Formatting -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('bold')" title="Bold (Ctrl+B)">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('italic')" title="Italic (Ctrl+I)">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4l4 16m-4-8h8"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('underline')" title="Underline (Ctrl+U)">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v8a4 4 0 008 0V4M4 20h16"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('strikeThrough')" title="Strikethrough">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h12M6 8h12M6 16h12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
+
+                                    <!-- Headings -->
+                                    <div class="flex gap-1">
+                                        <select class="editor-select text-sm border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-800" onchange="adminDashboard.formatHeading(this.value)" title="Heading Style">
+                                            <option value="">Normal</option>
+                                            <option value="h1">Heading 1</option>
+                                            <option value="h2">Heading 2</option>
+                                            <option value="h3">Heading 3</option>
+                                            <option value="h4">Heading 4</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
+
+                                    <!-- Lists -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('insertUnorderedList')" title="Bullet List">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('insertOrderedList')" title="Numbered List">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('indent')" title="Increase Indent">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m0 0l4-4m-4 4l4 4M4 18h16"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('outdent')" title="Decrease Indent">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m0 0l-4-4m4 4l-4 4M4 18h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
+
+                                    <!-- Alignment -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('justifyLeft')" title="Align Left">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h10M4 12h16M4 18h10"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('justifyCenter')" title="Align Center">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 6h10M4 12h16M7 18h10"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('justifyRight')" title="Align Right">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h10M4 12h16M10 18h10"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('justifyFull')" title="Justify">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Second Row: Advanced Features -->
+                                <div class="flex flex-wrap gap-2">
+                                    <!-- Links and Media -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.insertLink()" title="Insert Link">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.insertImage()" title="Insert Image">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.insertTable()" title="Insert Table">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.insertQuote()" title="Insert Quote">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
+
+                                    <!-- Utilities -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('removeFormat')" title="Clear Formatting">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('undo')" title="Undo (Ctrl+Z)">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.formatText('redo')" title="Redo (Ctrl+Y)">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="w-px bg-slate-300 dark:bg-slate-600"></div>
+
+                                    <!-- View Options -->
+                                    <div class="flex gap-1">
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.toggleEditorMode()" title="Toggle HTML View" id="html-view-btn">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="editor-btn" onclick="adminDashboard.toggleFullscreen()" title="Fullscreen Editor" id="fullscreen-btn">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Content Area -->
                             <div id="article-content" contenteditable="true"
-                                class="min-h-[300px] p-4 focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                                placeholder="Write your article content here...">
+                                class="editor-content min-h-[400px] p-4 focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 leading-relaxed"
+                                placeholder="Write your article content here..."
+                                style="line-height: 1.6; font-size: 16px;">
+                            </div>
+
+                            <!-- HTML Source View (Hidden by default) -->
+                            <textarea id="article-content-html"
+                                class="editor-content html-mode min-h-[400px] p-4 focus:outline-none bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-sm hidden w-full border-none resize-none"
+                                placeholder="HTML source code will appear here..."></textarea>
+
+                            <!-- Word Count and Status -->
+                            <div class="px-4 py-2 bg-slate-50 dark:bg-slate-700 border-t border-slate-200 dark:border-slate-600 flex justify-between items-center text-sm text-slate-600 dark:text-slate-400">
+                                <div class="flex items-center space-x-4">
+                                    <span id="word-count">0 words</span>
+                                    <span id="char-count">0 characters</span>
+                                    <span id="reading-time">~0 min read</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span id="editor-status" class="text-green-600 dark:text-green-400"></span>
+                                    <div id="auto-save-indicator" class="hidden">
+                                        <svg class="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -504,6 +724,97 @@
                         class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg btn-primary flex items-center space-x-2">
                         <span id="save-btn-text">Save Article</span>
                         <div id="save-spinner" class="hidden spinner"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Library Modal -->
+    <div id="media-library-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200">Media Library</h2>
+                <div class="flex items-center space-x-3">
+                    <button onclick="adminDashboard.uploadMedia()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg btn-primary flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span>Upload</span>
+                    </button>
+                    <button onclick="adminDashboard.closeMediaLibrary()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-hidden flex">
+                <!-- Sidebar -->
+                <div class="w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 p-4">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Filter by Type</label>
+                            <select id="media-type-filter" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                                <option value="">All Media</option>
+                                <option value="image">Images</option>
+                                <option value="video">Videos</option>
+                                <option value="document">Documents</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Search</label>
+                            <input type="text" id="media-search" placeholder="Search media..."
+                                class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Sort by</label>
+                            <select id="media-sort" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="name">Name A-Z</option>
+                                <option value="size">File Size</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Grid -->
+                <div class="flex-1 p-6 overflow-y-auto">
+                    <div id="media-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <!-- Media items will be loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="media-empty-state" class="hidden text-center py-12">
+                        <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2">No media files</h3>
+                        <p class="text-slate-600 dark:text-slate-400 mb-4">Upload your first image or document to get started.</p>
+                        <button onclick="adminDashboard.uploadMedia()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg btn-primary">
+                            Upload Media
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700">
+                <div class="text-sm text-slate-600 dark:text-slate-400">
+                    <span id="media-count">0 items</span> • <span id="media-storage">0 MB used</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button type="button" onclick="adminDashboard.closeMediaLibrary()"
+                        class="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                        Close
+                    </button>
+                    <button type="button" onclick="adminDashboard.selectMedia()" id="select-media-btn"
+                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Select Media
                     </button>
                 </div>
             </div>
@@ -2787,8 +3098,393 @@
             }
 
             formatText(command) {
-                document.execCommand(command, false, null);
-                document.getElementById('article-content').focus();
+                try {
+                    document.execCommand(command, false, null);
+                    const editor = document.getElementById('article-content');
+                    if (editor) {
+                        editor.focus();
+                        this.updateEditorStats();
+                    }
+                } catch (error) {
+                    console.error('Format command failed:', error);
+                }
+            }
+
+            formatHeading(tag) {
+                if (!tag) {
+                    this.formatText('formatBlock', 'div');
+                    return;
+                }
+
+                try {
+                    document.execCommand('formatBlock', false, tag);
+                    document.getElementById('article-content').focus();
+                    this.updateEditorStats();
+                } catch (error) {
+                    console.error('Heading format failed:', error);
+                }
+            }
+
+            insertLink() {
+                const url = prompt('Enter the URL:');
+                if (url) {
+                    const text = window.getSelection().toString() || prompt('Enter link text:') || url;
+                    try {
+                        document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`);
+                        document.getElementById('article-content').focus();
+                        this.updateEditorStats();
+                    } catch (error) {
+                        console.error('Insert link failed:', error);
+                    }
+                }
+            }
+
+            insertImage() {
+                // Open media library for image selection
+                this.openMediaLibrary((selectedMedia) => {
+                    const alt = prompt('Enter alt text (optional):') || selectedMedia.name || 'Image';
+                    try {
+                        const imageHtml = `<img src="${selectedMedia.url}" alt="${alt}" style="max-width: 100%; height: auto; margin: 10px 0;" />`;
+                        document.execCommand('insertHTML', false, imageHtml);
+                        document.getElementById('article-content').focus();
+                        this.updateEditorStats();
+                    } catch (error) {
+                        console.error('Insert image failed:', error);
+                    }
+                });
+            }
+
+            insertTable() {
+                const rows = parseInt(prompt('Number of rows:') || '3');
+                const cols = parseInt(prompt('Number of columns:') || '3');
+
+                if (rows > 0 && cols > 0 && rows <= 10 && cols <= 10) {
+                    let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+
+                    for (let i = 0; i < rows; i++) {
+                        tableHtml += '<tr>';
+                        for (let j = 0; j < cols; j++) {
+                            const tag = i === 0 ? 'th' : 'td';
+                            tableHtml += `<${tag} style="border: 1px solid #ccc; padding: 8px; text-align: left;">${i === 0 ? `Header ${j + 1}` : ''}</${tag}>`;
+                        }
+                        tableHtml += '</tr>';
+                    }
+
+                    tableHtml += '</table>';
+
+                    try {
+                        document.execCommand('insertHTML', false, tableHtml);
+                        document.getElementById('article-content').focus();
+                        this.updateEditorStats();
+                    } catch (error) {
+                        console.error('Insert table failed:', error);
+                    }
+                }
+            }
+
+            insertQuote() {
+                const quote = prompt('Enter the quote text:');
+                if (quote) {
+                    const author = prompt('Enter the author (optional):') || '';
+                    const quoteHtml = `
+                        <blockquote style="border-left: 4px solid #fbbf24; padding-left: 16px; margin: 16px 0; font-style: italic; color: #64748b;">
+                            "${quote}"
+                            ${author ? `<footer style="margin-top: 8px; font-size: 0.9em;">— ${author}</footer>` : ''}
+                        </blockquote>
+                    `;
+
+                    try {
+                        document.execCommand('insertHTML', false, quoteHtml);
+                        document.getElementById('article-content').focus();
+                        this.updateEditorStats();
+                    } catch (error) {
+                        console.error('Insert quote failed:', error);
+                    }
+                }
+            }
+
+            toggleEditorMode() {
+                const visualEditor = document.getElementById('article-content');
+                const htmlEditor = document.getElementById('article-content-html');
+                const toggleBtn = document.getElementById('html-view-btn');
+
+                if (visualEditor.style.display === 'none') {
+                    // Switch to visual mode
+                    htmlEditor.style.display = 'none';
+                    visualEditor.style.display = 'block';
+                    visualEditor.innerHTML = htmlEditor.value;
+                    toggleBtn.classList.remove('active');
+                    this.updateEditorStats();
+                } else {
+                    // Switch to HTML mode
+                    visualEditor.style.display = 'none';
+                    htmlEditor.style.display = 'block';
+                    htmlEditor.value = visualEditor.innerHTML;
+                    toggleBtn.classList.add('active');
+                }
+            }
+
+            toggleFullscreen() {
+                const modal = document.getElementById('article-editor-modal');
+                const toggleBtn = document.getElementById('fullscreen-btn');
+
+                if (modal.classList.contains('editor-fullscreen')) {
+                    modal.classList.remove('editor-fullscreen');
+                    toggleBtn.classList.remove('active');
+                } else {
+                    modal.classList.add('editor-fullscreen');
+                    toggleBtn.classList.add('active');
+                }
+            }
+
+            updateEditorStats() {
+                const editor = document.getElementById('article-content');
+                if (!editor) return;
+
+                const text = editor.innerText || editor.textContent || '';
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const chars = text.length;
+                const readingTime = Math.ceil(words / 200); // Average reading speed
+
+                const wordCountEl = document.getElementById('word-count');
+                const charCountEl = document.getElementById('char-count');
+                const readingTimeEl = document.getElementById('reading-time');
+
+                if (wordCountEl) wordCountEl.textContent = `${words} words`;
+                if (charCountEl) charCountEl.textContent = `${chars} characters`;
+                if (readingTimeEl) readingTimeEl.textContent = `~${readingTime} min read`;
+            }
+
+            handleAutoSave() {
+                // Clear existing timeout
+                if (this.autoSaveTimeout) {
+                    clearTimeout(this.autoSaveTimeout);
+                }
+
+                // Set new timeout for auto-save
+                this.autoSaveTimeout = setTimeout(() => {
+                    const saveStatus = document.getElementById('editor-status');
+                    const autoSaveIndicator = document.getElementById('auto-save-indicator');
+
+                    if (saveStatus && this.currentEditingArticle) {
+                        saveStatus.textContent = 'Auto-saving...';
+                        if (autoSaveIndicator) autoSaveIndicator.classList.remove('hidden');
+
+                        // Simulate auto-save (you can implement actual auto-save here)
+                        setTimeout(() => {
+                            saveStatus.textContent = 'Saved';
+                            if (autoSaveIndicator) autoSaveIndicator.classList.add('hidden');
+
+                            // Clear status after 2 seconds
+                            setTimeout(() => {
+                                saveStatus.textContent = '';
+                            }, 2000);
+                        }, 1000);
+                    }
+                }, 3000); // Auto-save after 3 seconds of inactivity
+            }
+
+            // Media Library Functions
+            openMediaLibrary(callback = null) {
+                this.mediaSelectionCallback = callback;
+                const modal = document.getElementById('media-library-modal');
+                modal.classList.remove('hidden');
+                this.loadMediaLibrary();
+            }
+
+            closeMediaLibrary() {
+                const modal = document.getElementById('media-library-modal');
+                modal.classList.add('hidden');
+                this.mediaSelectionCallback = null;
+                this.selectedMedia = null;
+                this.updateSelectButton();
+            }
+
+            async loadMediaLibrary() {
+                const mediaGrid = document.getElementById('media-grid');
+                const emptyState = document.getElementById('media-empty-state');
+
+                // Show loading state
+                mediaGrid.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                        <p class="text-slate-600 dark:text-slate-400">Loading media...</p>
+                    </div>
+                `;
+
+                try {
+                    // For now, we'll use a mock media library
+                    // In a real implementation, this would fetch from your media storage
+                    const mockMedia = [
+                        {
+                            id: '1',
+                            name: 'hero-image.jpg',
+                            url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+                            type: 'image',
+                            size: '245 KB',
+                            uploadedAt: '2024-01-15'
+                        },
+                        {
+                            id: '2',
+                            name: 'community-event.jpg',
+                            url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400',
+                            type: 'image',
+                            size: '312 KB',
+                            uploadedAt: '2024-01-14'
+                        },
+                        {
+                            id: '3',
+                            name: 'dominican-flag.jpg',
+                            url: 'https://images.unsplash.com/photo-1582564286939-8e4b7b6b4b4b?w=400',
+                            type: 'image',
+                            size: '189 KB',
+                            uploadedAt: '2024-01-13'
+                        }
+                    ];
+
+                    if (mockMedia.length === 0) {
+                        mediaGrid.innerHTML = '';
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        emptyState.classList.add('hidden');
+                        this.renderMediaGrid(mockMedia);
+                    }
+
+                    this.updateMediaStats(mockMedia);
+
+                } catch (error) {
+                    console.error('Error loading media library:', error);
+                    mediaGrid.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <p class="text-red-600 dark:text-red-400">Error loading media library</p>
+                        </div>
+                    `;
+                }
+            }
+
+            renderMediaGrid(mediaItems) {
+                const mediaGrid = document.getElementById('media-grid');
+
+                mediaGrid.innerHTML = mediaItems.map(item => `
+                    <div class="media-item group relative bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+                         onclick="adminDashboard.selectMediaItem('${item.id}', '${item.url}', '${item.name}')"
+                         data-media-id="${item.id}">
+                        <div class="aspect-square relative">
+                            ${item.type === 'image' ?
+                                `<img src="${item.url}" alt="${item.name}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>`
+                            }
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all"></div>
+                            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="event.stopPropagation(); adminDashboard.deleteMedia('${item.id}')"
+                                        class="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate" title="${item.name}">${item.name}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${item.size} • ${item.uploadedAt}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            selectMediaItem(id, url, name) {
+                // Remove previous selection
+                document.querySelectorAll('.media-item').forEach(item => {
+                    item.classList.remove('ring-2', 'ring-blue-500');
+                });
+
+                // Add selection to clicked item
+                const selectedItem = document.querySelector(`[data-media-id="${id}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('ring-2', 'ring-blue-500');
+                }
+
+                this.selectedMedia = { id, url, name };
+                this.updateSelectButton();
+            }
+
+            updateSelectButton() {
+                const selectBtn = document.getElementById('select-media-btn');
+                if (this.selectedMedia) {
+                    selectBtn.disabled = false;
+                    selectBtn.textContent = `Select "${this.selectedMedia.name}"`;
+                } else {
+                    selectBtn.disabled = true;
+                    selectBtn.textContent = 'Select Media';
+                }
+            }
+
+            selectMedia() {
+                if (this.selectedMedia && this.mediaSelectionCallback) {
+                    this.mediaSelectionCallback(this.selectedMedia);
+                    this.closeMediaLibrary();
+                }
+            }
+
+            updateMediaStats(mediaItems) {
+                const countEl = document.getElementById('media-count');
+                const storageEl = document.getElementById('media-storage');
+
+                if (countEl) countEl.textContent = `${mediaItems.length} items`;
+                if (storageEl) {
+                    const totalSize = mediaItems.reduce((sum, item) => {
+                        const sizeNum = parseFloat(item.size.replace(/[^\d.]/g, ''));
+                        return sum + sizeNum;
+                    }, 0);
+                    storageEl.textContent = `${totalSize.toFixed(1)} MB used`;
+                }
+            }
+
+            uploadMedia() {
+                // Create file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*,video/*,.pdf,.doc,.docx';
+                input.multiple = true;
+
+                input.onchange = (e) => {
+                    const files = Array.from(e.target.files);
+                    this.handleMediaUpload(files);
+                };
+
+                input.click();
+            }
+
+            async handleMediaUpload(files) {
+                this.showToast(`Uploading ${files.length} file(s)...`, 'info');
+
+                // In a real implementation, you would upload to your storage service
+                // For now, we'll simulate the upload
+                try {
+                    for (const file of files) {
+                        console.log('Uploading file:', file.name);
+                        // Simulate upload delay
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+                    this.showToast('Files uploaded successfully!', 'success');
+                    this.loadMediaLibrary(); // Refresh the library
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    this.showToast('Upload failed. Please try again.', 'error');
+                }
+            }
+
+            deleteMedia(mediaId) {
+                if (confirm('Are you sure you want to delete this media file?')) {
+                    // In a real implementation, you would delete from your storage service
+                    this.showToast('Media file deleted', 'success');
+                    this.loadMediaLibrary(); // Refresh the library
+                }
             }
 
             updateImagePreview(url) {
@@ -2932,6 +3628,141 @@
                 } catch (error) {
                     console.error('Error unfeaturing article:', error);
                     this.showToast('Error unfeaturing article', 'error');
+                }
+            }
+
+            // Article Scheduling and SEO Functions
+            handleStatusChange(status) {
+                const publishDateContainer = document.getElementById('publish-date-container');
+                const publishDateLabel = document.getElementById('publish-date-label');
+                const publishDateHelp = document.getElementById('publish-date-help');
+
+                if (status === 'SCHEDULED') {
+                    publishDateContainer.classList.remove('hidden');
+                    publishDateLabel.textContent = 'Schedule for';
+                    publishDateHelp.textContent = 'Select when this article should be published';
+
+                    // Set minimum date to current time
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    document.getElementById('article-publish-date').min = now.toISOString().slice(0, 16);
+                } else if (status === 'PUBLISHED') {
+                    publishDateContainer.classList.remove('hidden');
+                    publishDateLabel.textContent = 'Published Date & Time';
+                    publishDateHelp.textContent = 'When this article was published (leave empty for current time)';
+
+                    // Remove minimum date restriction
+                    document.getElementById('article-publish-date').removeAttribute('min');
+                } else {
+                    publishDateContainer.classList.add('hidden');
+                }
+            }
+
+            updateMetaCharCount() {
+                const metaDescription = document.getElementById('article-meta-description');
+                const charCount = document.getElementById('meta-char-count');
+
+                if (metaDescription && charCount) {
+                    const length = metaDescription.value.length;
+                    charCount.textContent = `${length}/160`;
+
+                    // Change color based on length
+                    if (length > 160) {
+                        charCount.className = 'text-xs text-red-500';
+                    } else if (length > 140) {
+                        charCount.className = 'text-xs text-yellow-500';
+                    } else {
+                        charCount.className = 'text-xs text-slate-500 dark:text-slate-400';
+                    }
+                }
+            }
+
+            // Enhanced article saving with new fields
+            async saveArticle() {
+                const form = document.getElementById('article-editor-form');
+                const formData = new FormData(form);
+
+                // Get content from editor
+                const contentEditor = document.getElementById('article-content');
+                const htmlEditor = document.getElementById('article-content-html');
+                const content = htmlEditor.style.display !== 'none' ? htmlEditor.value : contentEditor.innerHTML;
+
+                // Prepare article data with new fields
+                const articleData = {
+                    title: formData.get('title'),
+                    summary: formData.get('summary'),
+                    content: content,
+                    imageUrl: formData.get('imageUrl'),
+                    authorId: formData.get('authorId'),
+                    categoryId: formData.get('categoryId'),
+                    status: formData.get('status'),
+                    publishedAt: formData.get('publishedAt') || null,
+                    metaDescription: formData.get('metaDescription') || null,
+                    tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()).filter(tag => tag) : [],
+                    featured: formData.get('featured') === 'on'
+                };
+
+                // Validation
+                if (!articleData.title || !articleData.summary || !articleData.content || !articleData.authorId || !articleData.categoryId) {
+                    this.showToast('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Validate scheduled date
+                if (articleData.status === 'SCHEDULED') {
+                    if (!articleData.publishedAt) {
+                        this.showToast('Please select a publish date for scheduled articles', 'error');
+                        return;
+                    }
+
+                    const scheduledDate = new Date(articleData.publishedAt);
+                    const now = new Date();
+
+                    if (scheduledDate <= now) {
+                        this.showToast('Scheduled date must be in the future', 'error');
+                        return;
+                    }
+                }
+
+                // Show saving state
+                const saveBtn = document.getElementById('save-btn-text');
+                const saveSpinner = document.getElementById('save-spinner');
+                const saveStatus = document.getElementById('save-status');
+
+                saveBtn.textContent = 'Saving...';
+                saveSpinner.classList.remove('hidden');
+                saveStatus.textContent = 'Saving article...';
+
+                try {
+                    let response;
+                    if (this.currentEditingArticle) {
+                        // Update existing article
+                        response = await this.updateArticleInSupabase(this.currentEditingArticle.id, articleData);
+                    } else {
+                        // Create new article
+                        response = await this.createArticleInSupabase(articleData);
+                    }
+
+                    if (response.success) {
+                        const action = this.currentEditingArticle ? 'updated' : 'created';
+                        const statusMessage = articleData.status === 'SCHEDULED' ?
+                            `Article ${action} and scheduled for ${new Date(articleData.publishedAt).toLocaleString()}` :
+                            `Article ${action} successfully`;
+
+                        this.showToast(statusMessage, 'success');
+                        this.closeArticleEditor();
+                        this.loadArticles(); // Refresh the articles list
+                    } else {
+                        throw new Error(response.error || 'Failed to save article');
+                    }
+                } catch (error) {
+                    console.error('Error saving article:', error);
+                    this.showToast('Failed to save article. Please try again.', 'error');
+                } finally {
+                    // Reset button state
+                    saveBtn.textContent = this.currentEditingArticle ? 'Update Article' : 'Save Article';
+                    saveSpinner.classList.add('hidden');
+                    saveStatus.textContent = '';
                 }
             }
 
@@ -4583,30 +5414,89 @@
                     });
                 }
 
-                // Handle Enter key in content editor
+                // Enhanced content editor initialization
                 const contentEditor = document.getElementById('article-content');
+                const htmlEditor = document.getElementById('article-content-html');
+
                 if (contentEditor) {
+                    // Keyboard shortcuts
                     contentEditor.addEventListener('keydown', (e) => {
+                        // Handle common keyboard shortcuts
+                        if (e.ctrlKey || e.metaKey) {
+                            switch (e.key.toLowerCase()) {
+                                case 'b':
+                                    e.preventDefault();
+                                    this.formatText('bold');
+                                    break;
+                                case 'i':
+                                    e.preventDefault();
+                                    this.formatText('italic');
+                                    break;
+                                case 'u':
+                                    e.preventDefault();
+                                    this.formatText('underline');
+                                    break;
+                                case 'z':
+                                    if (e.shiftKey) {
+                                        e.preventDefault();
+                                        this.formatText('redo');
+                                    } else {
+                                        e.preventDefault();
+                                        this.formatText('undo');
+                                    }
+                                    break;
+                                case 'y':
+                                    e.preventDefault();
+                                    this.formatText('redo');
+                                    break;
+                                case 'k':
+                                    e.preventDefault();
+                                    this.insertLink();
+                                    break;
+                            }
+                        }
+
+                        // Handle Enter key for better paragraph formatting
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             document.execCommand('insertHTML', false, '<br><br>');
                         }
                     });
 
-                    // Auto-save functionality (optional)
-                    let autoSaveTimeout;
+                    // Real-time content updates
                     contentEditor.addEventListener('input', () => {
-                        clearTimeout(autoSaveTimeout);
-                        autoSaveTimeout = setTimeout(() => {
-                            const saveStatus = document.getElementById('save-status');
-                            if (saveStatus && this.currentEditingArticle) {
-                                saveStatus.textContent = 'Auto-saving...';
-                                // You can implement auto-save here if needed
-                                setTimeout(() => {
-                                    saveStatus.textContent = '';
-                                }, 1000);
-                            }
-                        }, 2000);
+                        this.updateEditorStats();
+                        this.handleAutoSave();
+                    });
+
+                    // Paste handling for better formatting
+                    contentEditor.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                        document.execCommand('insertHTML', false, text.replace(/\n/g, '<br>'));
+                        this.updateEditorStats();
+                    });
+
+                    // Initialize editor stats
+                    this.updateEditorStats();
+                }
+
+                // HTML editor synchronization
+                if (htmlEditor) {
+                    htmlEditor.addEventListener('input', () => {
+                        // Update visual editor when HTML changes
+                        if (contentEditor.style.display === 'none') {
+                            // We're in HTML mode, update will happen when switching back
+                        }
+                    });
+                }
+
+                // Initialize heading selector
+                const headingSelect = document.querySelector('.editor-select');
+                if (headingSelect) {
+                    headingSelect.addEventListener('change', (e) => {
+                        this.formatHeading(e.target.value);
+                        e.target.value = ''; // Reset selector
                     });
                 }
 
