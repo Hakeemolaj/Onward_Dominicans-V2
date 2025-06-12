@@ -274,14 +274,12 @@ const GallerySection = forwardRef<HTMLDivElement, GallerySectionProps>((props, r
 
         // Try to load from API first, fallback to sample data
         try {
-          const [itemsResponse, categoriesResponse] = await Promise.all([
-            fetch('http://localhost:3001/api/gallery'),
-            fetch('http://localhost:3001/api/gallery-categories')
+          const [itemsData, categoriesData] = await Promise.all([
+            apiService.getGalleryItems(),
+            apiService.getGalleryCategories()
           ]);
 
-          if (itemsResponse.ok && categoriesResponse.ok) {
-            const itemsData = await itemsResponse.json();
-            const categoriesData = await categoriesResponse.json();
+          if (itemsData.success && categoriesData.success) {
 
             if (itemsData.success && categoriesData.success) {
               // Transform API data to match our interface

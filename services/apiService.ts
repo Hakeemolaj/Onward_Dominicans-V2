@@ -428,6 +428,50 @@ class ApiService {
     return this.request('/authors', {}, false); // Public endpoint
   }
 
+  // Gallery
+  async getGalleryItems(categoryId?: string): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.getGalleryItems(categoryId);
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch gallery items' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
+    const endpoint = categoryId ? `/gallery?categoryId=${categoryId}` : '/gallery';
+    return this.request(endpoint, {}, false); // Public endpoint
+  }
+
+  async getGalleryCategories(): Promise<ApiResponse> {
+    if (useSupabase()) {
+      const result = await supabaseService.getGalleryCategories();
+
+      if (result.error) {
+        return {
+          success: false,
+          error: { message: 'Failed to fetch gallery categories' },
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+    }
+    return this.request('/gallery-categories', {}, false); // Public endpoint
+  }
+
   async getAuthor(id: string): Promise<ApiResponse> {
     return this.request(`/authors/${id}`, {}, false); // Public endpoint
   }
