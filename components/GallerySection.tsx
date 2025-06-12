@@ -304,7 +304,11 @@ const GallerySection = forwardRef<HTMLDivElement, GallerySectionProps>((props, r
                 dateTaken: item.dateTaken,
                 isActive: item.isActive,
                 createdAt: item.createdAt,
-                updatedAt: item.updatedAt
+                updatedAt: item.updatedAt,
+                // Stack-related properties
+                stackGroup: item.stackGroup,
+                stackOrder: item.stackOrder || 0,
+                isStackCover: item.isStackCover || false
               }));
 
               const transformedCategories: GalleryCategory[] = categoriesData.data.map((cat: any) => ({
