@@ -26,7 +26,8 @@ const MeetTheTeamSection = forwardRef<HTMLDivElement, SectionProps>((props, ref)
           const transformedAuthors: Author[] = response.data.map(author => ({
             name: author.name,
             avatarUrl: author.avatarUrl || undefined,
-            bio: author.bio || 'Dedicated journalist contributing to our publication.'
+            bio: author.bio || 'Dedicated journalist contributing to our publication.',
+            articleCount: author.articleCount || 0
           }));
 
           setAuthors(transformedAuthors);
@@ -91,6 +92,15 @@ const MeetTheTeamSection = forwardRef<HTMLDivElement, SectionProps>((props, ref)
                 <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed min-h-[60px]">
                   {author.bio || 'Dedicated journalist contributing to our publication.'}
                 </p>
+                <div className="mt-3 flex items-center justify-center">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    (author.articleCount || 0) > 0
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}>
+                    📝 {author.articleCount || 0} article{(author.articleCount || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

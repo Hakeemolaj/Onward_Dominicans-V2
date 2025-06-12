@@ -14,7 +14,8 @@ export interface SectionProps {
 export interface Author {
   name: string;
   avatarUrl?: string;
-  bio?: string; 
+  bio?: string;
+  articleCount?: number;
 }
 
 export interface NewsArticle {

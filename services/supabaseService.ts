@@ -82,7 +82,49 @@ class SupabaseService {
 
   // Authors
   async getAuthors() {
-    return this.request('/authors?isActive=eq.true&order=name.asc');
+    try {
+      // First get authors
+      const authorsResult = await this.request('/authors?isActive=eq.true&order=name.asc');
+
+      if (authorsResult.error || !authorsResult.data) {
+        return authorsResult;
+      }
+
+      // Get article counts for each author
+      const authorsWithCounts = await Promise.all(
+        authorsResult.data.map(async (author: any) => {
+          try {
+            const articlesResult = await this.request(
+              `/articles?authorId=eq.${author.id}&select=id&status=eq.PUBLISHED`
+            );
+
+            const articleCount = articlesResult.data ? articlesResult.data.length : 0;
+
+            return {
+              ...author,
+              articleCount
+            };
+          } catch (error) {
+            console.warn(`Failed to get article count for author ${author.name}:`, error);
+            return {
+              ...author,
+              articleCount: 0
+            };
+          }
+        })
+      );
+
+      return {
+        ...authorsResult,
+        data: authorsWithCounts
+      };
+    } catch (error) {
+      console.error('Error fetching authors with article counts:', error);
+      return {
+        error: { message: 'Failed to fetch authors' },
+        data: null
+      };
+    }
   }
 
   async createAuthor(authorData: any) {

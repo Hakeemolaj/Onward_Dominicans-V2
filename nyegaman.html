@@ -1258,11 +1258,49 @@
                     const authors = await response.json();
                     console.log(`✅ Loaded ${authors.length} authors from Supabase`);
 
+                    // Get article counts for each author
+                    console.log('🔄 Fetching article counts for authors...');
+                    const authorsWithCounts = await Promise.all(authors.map(async (author) => {
+                        try {
+                            const articlesResponse = await fetch(
+                                `${this.supabaseUrl}/rest/v1/articles?authorId=eq.${author.id}&select=id&status=eq.PUBLISHED`,
+                                {
+                                    headers: {
+                                        'apikey': this.supabaseAnonKey,
+                                        'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                }
+                            );
+
+                            if (articlesResponse.ok) {
+                                const articles = await articlesResponse.json();
+                                return {
+                                    ...author,
+                                    articleCount: articles.length
+                                };
+                            } else {
+                                return {
+                                    ...author,
+                                    articleCount: 0
+                                };
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to get article count for author ${author.name}:`, error);
+                            return {
+                                ...author,
+                                articleCount: 0
+                            };
+                        }
+                    }));
+
+                    console.log('✅ Added article counts to authors');
+
                     return {
                         success: true,
-                        data: authors,
+                        data: authorsWithCounts,
                         meta: {
-                            total: authors.length
+                            total: authorsWithCounts.length
                         }
                     };
                 } catch (error) {
@@ -2953,7 +2991,7 @@
                                             <p class="text-sm text-slate-500 dark:text-slate-400 truncate">${author.email}</p>
                                             <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">${author.bio || 'No bio available'}</p>
                                             <div class="flex items-center justify-between mt-2">
-                                                <span class="text-xs text-slate-500 dark:text-slate-500">${author._count?.articles || 0} articles</span>
+                                                <span class="text-xs font-medium ${(author.articleCount || 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-500'}">${author.articleCount || 0} articles</span>
                                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${author.isActive ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200'}">${author.isActive ? 'Active' : 'Inactive'}</span>
                                             </div>
                                         </div>
