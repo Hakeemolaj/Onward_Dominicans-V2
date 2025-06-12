@@ -29,8 +29,9 @@ export const getAuthors = async (
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    // Build where clause
-    const where: any = { isActive: true };
+    // Build where clause - allow admin to see all authors
+    const includeInactive = req.query.includeInactive === 'true';
+    const where: any = includeInactive ? {} : { isActive: true };
 
     if (search) {
       where.OR = [
@@ -41,8 +42,8 @@ export const getAuthors = async (
 
     // Use raw SQL directly to avoid prepared statement conflicts
     console.log('🔄 Using raw SQL for authors to avoid prepared statement conflicts');
-    const total = await rawSqlFallbacks.countAuthors();
-    const authors = await rawSqlFallbacks.getAuthors(skip, take, sortBy, sortOrder);
+    const total = await rawSqlFallbacks.countAuthors(includeInactive);
+    const authors = await rawSqlFallbacks.getAuthors(skip, take, sortBy, sortOrder, includeInactive);
 
     const totalPages = Math.ceil(total / take);
     const meta: PaginationMeta = {
