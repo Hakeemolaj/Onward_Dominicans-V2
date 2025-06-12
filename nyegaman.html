@@ -1325,8 +1325,7 @@
                         email: authorData.email,
                         bio: authorData.bio || null,
                         avatarUrl: authorData.avatarUrl || null,
-                        isActive: authorData.isActive !== false, // Default to true
-                        createdBy: 'system-user-001'
+                        isActive: authorData.isActive !== false // Default to true
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/authors`, {
@@ -1370,8 +1369,7 @@
                         email: authorData.email,
                         bio: authorData.bio || null,
                         avatarUrl: authorData.avatarUrl || null,
-                        isActive: authorData.isActive !== false,
-                        updatedAt: new Date().toISOString()
+                        isActive: authorData.isActive !== false
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/authors?id=eq.${id}`, {
