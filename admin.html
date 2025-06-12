@@ -1116,7 +1116,7 @@
                         publishedAt: articleData.status === 'PUBLISHED' ? new Date().toISOString() : null,
                         authorId: articleData.authorId || 'author-001',
                         categoryId: articleData.categoryId || 'cat-001',
-                        createdBy: 'admin'
+                        createdBy: 'system-user-001'
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/articles`, {
@@ -1488,7 +1488,7 @@
                         stackId: itemData.stackId,
                         stackOrder: itemData.stackOrder || 1,
                         isStackCover: itemData.isStackCover || false,
-                        createdBy: 'admin'
+                        createdBy: 'system-user-001'
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items`, {
@@ -1613,7 +1613,7 @@
                         id: id,
                         name: categoryData.name,
                         description: categoryData.description,
-                        createdBy: 'admin'
+                        createdBy: 'system-user-001'
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories`, {
