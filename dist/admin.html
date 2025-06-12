@@ -3803,21 +3803,38 @@
             }
 
             async saveGalleryItem() {
+                console.log('🚀 Starting saveGalleryItem function...');
+
                 const form = document.getElementById('gallery-editor-form');
                 const formData = new FormData(form);
                 const saveBtn = document.getElementById('gallery-save-btn-text');
                 const saveSpinner = document.getElementById('gallery-save-spinner');
                 const saveStatus = document.getElementById('gallery-save-status');
 
-                // Get all image inputs
+                // Get all image inputs with detailed logging
                 const imageGroups = document.querySelectorAll('.image-input-group');
+                console.log(`📸 Found ${imageGroups.length} image input groups`);
+
                 const images = [];
 
                 // Validate and collect image data
                 for (let i = 0; i < imageGroups.length; i++) {
                     const group = imageGroups[i];
-                    const imageUrl = group.querySelector('input[name="imageUrl"]').value.trim();
-                    const thumbnailUrl = group.querySelector('input[name="thumbnailUrl"]').value.trim();
+                    console.log(`🔍 Processing image group ${i + 1}:`, group);
+
+                    const imageUrlInput = group.querySelector('input[name="imageUrl"]');
+                    const thumbnailUrlInput = group.querySelector('input[name="thumbnailUrl"]');
+
+                    if (!imageUrlInput) {
+                        console.error(`❌ No imageUrl input found in group ${i + 1}`);
+                        this.showToast(`Image URL input not found for Image ${i + 1}`, 'error');
+                        return;
+                    }
+
+                    const imageUrl = imageUrlInput.value.trim();
+                    const thumbnailUrl = thumbnailUrlInput ? thumbnailUrlInput.value.trim() : '';
+
+                    console.log(`📝 Image ${i + 1} data:`, { imageUrl, thumbnailUrl });
 
                     if (!imageUrl) {
                         this.showToast(`Please provide URL for Image ${i + 1}`, 'error');
@@ -3843,6 +3860,8 @@
                     });
                 }
 
+                console.log(`✅ Collected ${images.length} valid images:`, images);
+
                 // Validate required fields
                 const title = formData.get('title');
                 if (!title) {
@@ -3864,6 +3883,9 @@
                     let stackGroup = null;
                     if (images.length > 1) {
                         stackGroup = title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') + '-' + Date.now();
+                        console.log(`📚 Creating stack group: ${stackGroup}`);
+                    } else {
+                        console.log('📸 Single image - no stack group needed');
                     }
 
                     // Helper function to convert empty strings to null
@@ -3895,6 +3917,8 @@
                         dateTaken: getDateValue('dateTaken')
                     };
 
+                    console.log('📋 Base form data:', baseData);
+
                     // If editing existing item, update it
                     if (this.currentEditingGalleryItem) {
                         const itemData = {
@@ -3922,7 +3946,9 @@
                     }
 
                     // Create new items
+                    console.log(`🔄 Starting to create ${images.length} gallery items...`);
                     const createdItems = [];
+
                     for (let i = 0; i < images.length; i++) {
                         const image = images[i];
                         const itemData = {
@@ -3938,14 +3964,23 @@
 
                         saveStatus.textContent = `Saving image ${i + 1} of ${images.length}...`;
                         console.log(`📤 Sending gallery item data for image ${i + 1}:`, itemData);
-                        const response = await this.makeAPICall('/gallery', 'POST', itemData);
 
-                        if (response.success) {
-                            createdItems.push(response.data);
-                        } else {
-                            const errorMsg = response.error?.message || `Failed to save image ${i + 1}`;
-                            this.showToast(errorMsg, 'error');
-                            console.error(`Error saving image ${i + 1}:`, response);
+                        try {
+                            const response = await this.makeAPICall('/gallery', 'POST', itemData);
+                            console.log(`📥 Response for image ${i + 1}:`, response);
+
+                            if (response.success) {
+                                createdItems.push(response.data);
+                                console.log(`✅ Successfully created image ${i + 1}`);
+                            } else {
+                                const errorMsg = response.error?.message || `Failed to save image ${i + 1}`;
+                                this.showToast(errorMsg, 'error');
+                                console.error(`❌ Error saving image ${i + 1}:`, response);
+                                return;
+                            }
+                        } catch (apiError) {
+                            console.error(`❌ API call failed for image ${i + 1}:`, apiError);
+                            this.showToast(`API error saving image ${i + 1}: ${apiError.message}`, 'error');
                             return;
                         }
                     }
