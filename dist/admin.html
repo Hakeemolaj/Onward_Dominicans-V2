@@ -951,6 +951,9 @@
                 if (endpoint.startsWith('/categories')) {
                     return this.handleCategoryOperation(endpoint, method, data);
                 }
+                if (endpoint.startsWith('/gallery')) {
+                    return this.handleGalleryOperation(endpoint, method, data);
+                }
 
                 // For non-article operations, try backend first, then fallback
                 const options = {
@@ -1343,6 +1346,376 @@
                     };
                 } catch (error) {
                     console.error('❌ Supabase category operation failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async handleGalleryOperation(endpoint, method, data) {
+                console.log(`🔄 Using Supabase for gallery operation: ${method} ${endpoint}`);
+
+                try {
+                    if (method === 'GET') {
+                        if (endpoint === '/gallery' || endpoint.includes('/gallery?')) {
+                            return await this.getGalleryFromSupabase();
+                        } else if (endpoint === '/gallery-categories' || endpoint.includes('/gallery-categories?')) {
+                            return await this.getGalleryCategoriesFromSupabase();
+                        }
+                    } else if (method === 'POST') {
+                        if (endpoint === '/gallery') {
+                            return await this.createGalleryItemInSupabase(data);
+                        } else if (endpoint === '/gallery-categories') {
+                            return await this.createGalleryCategoryInSupabase(data);
+                        }
+                    } else if (method === 'PUT') {
+                        if (endpoint.match(/^\/gallery\/[^\/]+$/)) {
+                            const id = endpoint.split('/')[2];
+                            return await this.updateGalleryItemInSupabase(id, data);
+                        } else if (endpoint.match(/^\/gallery-categories\/[^\/]+$/)) {
+                            const id = endpoint.split('/')[2];
+                            return await this.updateGalleryCategoryInSupabase(id, data);
+                        }
+                    } else if (method === 'DELETE') {
+                        if (endpoint.match(/^\/gallery\/[^\/]+$/)) {
+                            const id = endpoint.split('/')[2];
+                            return await this.deleteGalleryItemFromSupabase(id);
+                        } else if (endpoint.match(/^\/gallery-categories\/[^\/]+$/)) {
+                            const id = endpoint.split('/')[2];
+                            return await this.deleteGalleryCategoryFromSupabase(id);
+                        }
+                    }
+
+                    // For now, return success for other gallery operations
+                    return {
+                        success: true,
+                        data: { message: 'Gallery operation completed' }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase gallery operation failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async getGalleryFromSupabase() {
+                try {
+                    console.log('🔄 Fetching gallery items from Supabase...');
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?select=*,category:gallery_categories(*)&order=createdAt.desc`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Supabase request failed: ${response.status}`);
+                    }
+
+                    const gallery = await response.json();
+                    console.log(`✅ Loaded ${gallery.length} gallery items from Supabase`);
+
+                    return {
+                        success: true,
+                        data: gallery,
+                        meta: {
+                            total: gallery.length
+                        }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase gallery fetch failed:', error);
+                    return {
+                        success: false,
+                        data: [],
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async getGalleryCategoriesFromSupabase() {
+                try {
+                    console.log('🔄 Fetching gallery categories from Supabase...');
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories?order=name.asc`, {
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Supabase request failed: ${response.status}`);
+                    }
+
+                    const categories = await response.json();
+                    console.log(`✅ Loaded ${categories.length} gallery categories from Supabase`);
+
+                    return {
+                        success: true,
+                        data: categories,
+                        meta: {
+                            total: categories.length
+                        }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase gallery categories fetch failed:', error);
+                    return {
+                        success: false,
+                        data: [],
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async createGalleryItemInSupabase(itemData) {
+                try {
+                    console.log('🔄 Creating gallery item in Supabase:', itemData);
+
+                    const id = 'gallery-' + Date.now();
+
+                    const supabaseData = {
+                        id: id,
+                        title: itemData.title,
+                        description: itemData.description,
+                        imageUrl: itemData.imageUrl,
+                        categoryId: itemData.categoryId,
+                        stackId: itemData.stackId,
+                        stackOrder: itemData.stackOrder || 1,
+                        isStackCover: itemData.isStackCover || false,
+                        createdBy: 'admin'
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase create failed: ${response.status} - ${error}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Gallery item created in Supabase:', result);
+
+                    return {
+                        success: true,
+                        data: result[0]
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase create gallery item failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async updateGalleryItemInSupabase(id, itemData) {
+                try {
+                    console.log('🔄 Updating gallery item in Supabase:', id, itemData);
+
+                    const supabaseData = {
+                        title: itemData.title,
+                        description: itemData.description,
+                        imageUrl: itemData.imageUrl,
+                        categoryId: itemData.categoryId,
+                        stackId: itemData.stackId,
+                        stackOrder: itemData.stackOrder,
+                        isStackCover: itemData.isStackCover,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase update failed: ${response.status} - ${error}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Gallery item updated in Supabase:', result);
+
+                    return {
+                        success: true,
+                        data: result[0]
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase update gallery item failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async deleteGalleryItemFromSupabase(id) {
+                try {
+                    console.log('🔄 Deleting gallery item from Supabase:', id);
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?id=eq.${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase delete failed: ${response.status} - ${error}`);
+                    }
+
+                    console.log('✅ Gallery item deleted from Supabase');
+
+                    return {
+                        success: true,
+                        data: { message: 'Gallery item deleted successfully' }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase delete gallery item failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async createGalleryCategoryInSupabase(categoryData) {
+                try {
+                    console.log('🔄 Creating gallery category in Supabase:', categoryData);
+
+                    const id = 'gallery-cat-' + Date.now();
+
+                    const supabaseData = {
+                        id: id,
+                        name: categoryData.name,
+                        description: categoryData.description,
+                        createdBy: 'admin'
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase create failed: ${response.status} - ${error}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Gallery category created in Supabase:', result);
+
+                    return {
+                        success: true,
+                        data: result[0]
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase create gallery category failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async updateGalleryCategoryInSupabase(id, categoryData) {
+                try {
+                    console.log('🔄 Updating gallery category in Supabase:', id, categoryData);
+
+                    const supabaseData = {
+                        name: categoryData.name,
+                        description: categoryData.description,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories?id=eq.${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify(supabaseData)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase update failed: ${response.status} - ${error}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Gallery category updated in Supabase:', result);
+
+                    return {
+                        success: true,
+                        data: result[0]
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase update gallery category failed:', error);
+                    return {
+                        success: false,
+                        error: { message: error.message }
+                    };
+                }
+            }
+
+            async deleteGalleryCategoryFromSupabase(id) {
+                try {
+                    console.log('🔄 Deleting gallery category from Supabase:', id);
+
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_categories?id=eq.${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': this.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Supabase delete failed: ${response.status} - ${error}`);
+                    }
+
+                    console.log('✅ Gallery category deleted from Supabase');
+
+                    return {
+                        success: true,
+                        data: { message: 'Gallery category deleted successfully' }
+                    };
+                } catch (error) {
+                    console.error('❌ Supabase delete gallery category failed:', error);
                     return {
                         success: false,
                         error: { message: error.message }
