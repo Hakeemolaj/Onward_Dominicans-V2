@@ -1119,9 +1119,9 @@
                         imageUrl: articleData.imageUrl,
                         status: articleData.status || 'DRAFT',
                         publishedAt: articleData.status === 'PUBLISHED' ? new Date().toISOString() : null,
-                        authorId: articleData.authorId || 'author-001',
-                        categoryId: articleData.categoryId || 'cat-001',
-                        createdBy: 'system-user-001'
+                        authorId: articleData.authorId || 'cmbsufpwv00029dur4q46etar',
+                        categoryId: articleData.categoryId || 'cmbsufqb100059durwnc7eri6',
+                        createdBy: 'cmbsufok100009durfa1z503t'
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/articles`, {
@@ -1684,7 +1684,7 @@
                         stackOrder: itemData.stackOrder || 1,
                         isStackCover: itemData.isStackCover || false,
                         isActive: true,
-                        createdBy: 'system-user-001'
+                        createdBy: 'cmbsufok100009durfa1z503t'
                     };
 
                     const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items`, {
