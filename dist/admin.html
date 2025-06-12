@@ -1405,7 +1405,7 @@
                 try {
                     console.log('🔄 Fetching gallery items from Supabase...');
 
-                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?select=*,category:gallery_categories(*)&order=createdAt.desc`, {
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items?select=*,category:gallery_categories(*)&order=createdAt.desc`, {
                         headers: {
                             'apikey': this.supabaseAnonKey,
                             'Authorization': `Bearer ${this.supabaseAnonKey}`,
@@ -1491,7 +1491,7 @@
                         createdBy: 'admin'
                     };
 
-                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery`, {
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items`, {
                         method: 'POST',
                         headers: {
                             'apikey': this.supabaseAnonKey,
@@ -1538,7 +1538,7 @@
                         updatedAt: new Date().toISOString()
                     };
 
-                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?id=eq.${id}`, {
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items?id=eq.${id}`, {
                         method: 'PATCH',
                         headers: {
                             'apikey': this.supabaseAnonKey,
@@ -1574,7 +1574,7 @@
                 try {
                     console.log('🔄 Deleting gallery item from Supabase:', id);
 
-                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery?id=eq.${id}`, {
+                    const response = await fetch(`${this.supabaseUrl}/rest/v1/gallery_items?id=eq.${id}`, {
                         method: 'DELETE',
                         headers: {
                             'apikey': this.supabaseAnonKey,
