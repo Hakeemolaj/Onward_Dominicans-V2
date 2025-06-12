@@ -8,6 +8,13 @@ interface SEOHeadProps {
   url?: string;
   article?: NewsArticle;
   type?: 'website' | 'article';
+  keywords?: string[];
+  publishedTime?: string;
+  modifiedTime?: string;
+  section?: string;
+  tags?: string[];
+  locale?: string;
+  alternateLocales?: string[];
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
@@ -16,7 +23,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   image = 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&h=630&fit=crop',
   url = 'https://onward-dominicans.vercel.app/',
   article,
-  type = 'website'
+  type = 'website',
+  keywords = ['Dominican community', 'Dominican culture', 'Dominican news', 'Caribbean culture', 'Latino community'],
+  publishedTime,
+  modifiedTime,
+  section,
+  tags = [],
+  locale = 'en_US',
+  alternateLocales = []
 }) => {
   React.useEffect(() => {
     // Update document title
@@ -27,6 +41,16 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     if (metaDescription) {
       metaDescription.setAttribute('content', description);
     }
+
+    // Update keywords meta tag
+    let metaKeywords = document.querySelector('meta[name="keywords"]');
+    if (!metaKeywords) {
+      metaKeywords = document.createElement('meta');
+      metaKeywords.setAttribute('name', 'keywords');
+      document.head.appendChild(metaKeywords);
+    }
+    const allKeywords = [...keywords, ...tags].join(', ');
+    metaKeywords.setAttribute('content', allKeywords);
     
     // Update Open Graph meta tags
     const ogTitle = document.querySelector('meta[property="og:title"]');
@@ -43,6 +67,44 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     
     const ogType = document.querySelector('meta[property="og:type"]');
     if (ogType) ogType.setAttribute('content', type);
+
+    const ogLocale = document.querySelector('meta[property="og:locale"]');
+    if (ogLocale) ogLocale.setAttribute('content', locale);
+
+    // Add article-specific Open Graph tags
+    if (type === 'article' && article) {
+      const ogPublishedTime = document.querySelector('meta[property="article:published_time"]') || document.createElement('meta');
+      ogPublishedTime.setAttribute('property', 'article:published_time');
+      ogPublishedTime.setAttribute('content', publishedTime || article.date);
+      if (!document.head.contains(ogPublishedTime)) document.head.appendChild(ogPublishedTime);
+
+      const ogModifiedTime = document.querySelector('meta[property="article:modified_time"]') || document.createElement('meta');
+      ogModifiedTime.setAttribute('property', 'article:modified_time');
+      ogModifiedTime.setAttribute('content', modifiedTime || article.date);
+      if (!document.head.contains(ogModifiedTime)) document.head.appendChild(ogModifiedTime);
+
+      const ogSection = document.querySelector('meta[property="article:section"]') || document.createElement('meta');
+      ogSection.setAttribute('property', 'article:section');
+      ogSection.setAttribute('content', section || article.category);
+      if (!document.head.contains(ogSection)) document.head.appendChild(ogSection);
+
+      const ogAuthor = document.querySelector('meta[property="article:author"]') || document.createElement('meta');
+      ogAuthor.setAttribute('property', 'article:author');
+      ogAuthor.setAttribute('content', article.author.name);
+      if (!document.head.contains(ogAuthor)) document.head.appendChild(ogAuthor);
+
+      // Add article tags
+      const existingTags = document.querySelectorAll('meta[property="article:tag"]');
+      existingTags.forEach(tag => tag.remove());
+
+      const articleTags = [...(article.tags || []), ...tags];
+      articleTags.forEach(tag => {
+        const ogTag = document.createElement('meta');
+        ogTag.setAttribute('property', 'article:tag');
+        ogTag.setAttribute('content', tag);
+        document.head.appendChild(ogTag);
+      });
+    }
     
     // Update Twitter meta tags
     const twitterTitle = document.querySelector('meta[property="twitter:title"]');

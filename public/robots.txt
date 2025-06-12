@@ -1,32 +1,68 @@
 User-agent: *
 Allow: /
 
-# Sitemap location
+# Sitemap locations
 Sitemap: https://onward-dominicans.vercel.app/sitemap.xml
+Sitemap: https://onward-dominicans.vercel.app/news-sitemap.xml
 
-# Allow all search engines to crawl the site
+# Allow all major search engines to crawl the site
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Slurp
 Allow: /
+Crawl-delay: 1
 
-# Disallow admin areas from search engines
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+# Disallow admin areas and sensitive paths from search engines
 User-agent: *
 Disallow: /admin.html
+Disallow: /nyegaman.html
+Disallow: /nyegaman
 Disallow: /api/
 Disallow: /_next/
 Disallow: /node_modules/
+Disallow: /scripts/
+Disallow: /.env
+Disallow: /backend/
+Disallow: /dist/
+Disallow: /src/
 
-# Allow crawling of images
+# Allow crawling of images and media
 User-agent: Googlebot-Image
 Allow: /
+Allow: /images/
+Allow: /assets/
 
-# Crawl delay (optional - be respectful to server resources)
-Crawl-delay: 1
+User-agent: Googlebot-News
+Allow: /
+Allow: /article/
+Allow: /#news-feed
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
 
 # Host directive (helps with canonicalization)
 Host: https://onward-dominicans.vercel.app
+
+# Clean URLs - redirect common patterns
+# This helps with SEO by avoiding duplicate content

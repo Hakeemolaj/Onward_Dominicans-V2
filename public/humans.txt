@@ -1,0 +1,18 @@
+/* TEAM */
+Developer: Your Name
+Contact: contact@onwarddominicans.com
+Twitter: @onwarddominicans
+From: United States
+
+/* THANKS */
+Dominican Community for inspiration and support
+Open source contributors
+
+/* SITE */
+Last update: 2025-06-12
+Language: English / Spanish
+Doctype: HTML5
+IDE: Visual Studio Code
+Standards: HTML5, CSS3, JavaScript ES6+
+Components: React, TypeScript, Tailwind CSS
+Software: Vite, Node.js

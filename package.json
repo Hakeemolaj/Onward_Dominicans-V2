@@ -22,7 +22,12 @@
     "deploy:gh-pages": "npm run build && gh-pages -d dist",
     "deploy:setup": "bash deploy-setup.sh",
     "keep-alive": "node keep-alive.js",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "seo:setup": "node scripts/seo-setup.js",
+    "seo:sitemap": "node scripts/generate-sitemap.js",
+    "seo:validate": "node scripts/validate-seo.js",
+    "seo:codes": "node scripts/update-tracking-codes.js",
+    "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",

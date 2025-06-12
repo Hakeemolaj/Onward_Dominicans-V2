@@ -15,6 +15,7 @@ import ImageLightboxModal from './components/ImageLightboxModal';
 import SlideshowModal from './components/SlideshowModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import SEOHead from './components/SEOHead';
+import SEOAnalytics from './components/SEOAnalytics';
 // import ApiExample from './components/ApiExample'; // Demo only - remove for production
 
 import { NewsArticle as NewsArticleType, GalleryItem, GalleryStack } from './types';
@@ -295,6 +296,11 @@ const App: React.FC = () => {
         image={selectedNewsArticle ? selectedNewsArticle.imageUrl : undefined}
         article={selectedNewsArticle || undefined}
         type={selectedNewsArticle ? 'article' : 'website'}
+      />
+      <SEOAnalytics
+        pageTitle={selectedNewsArticle ? `${selectedNewsArticle.title} - Onward Dominicans` : 'Onward Dominicans - Dominican Community News & Culture'}
+        contentType={selectedNewsArticle ? 'article' : 'homepage'}
+        articleId={selectedNewsArticle?.id?.toString()}
       />
       <TopHeader theme={theme} toggleTheme={toggleTheme} />
       <NavBar
