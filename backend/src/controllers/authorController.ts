@@ -77,37 +77,75 @@ export const getAuthor = async (
   try {
     const { id } = req.params;
 
-    const author = await db.prisma.author.findUnique({
-      where: { id },
-      include: {
-        articles: {
-          where: { status: 'PUBLISHED' },
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            summary: true,
-            imageUrl: true,
-            publishedAt: true,
-            category: {
+    // Use safePrismaOperation to handle potential prepared statement conflicts
+    const author = await safePrismaOperation(
+      async () => {
+        return await db.prisma.author.findUnique({
+          where: { id },
+          include: {
+            articles: {
+              where: { status: 'PUBLISHED' },
               select: {
                 id: true,
-                name: true,
+                title: true,
                 slug: true,
+                summary: true,
+                imageUrl: true,
+                publishedAt: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                  },
+                },
+              },
+              orderBy: { publishedAt: 'desc' },
+            },
+            _count: {
+              select: {
+                articles: {
+                  where: { status: 'PUBLISHED' },
+                },
               },
             },
           },
-          orderBy: { publishedAt: 'desc' },
-        },
-        _count: {
-          select: {
+        });
+      },
+      async (client) => {
+        return await client.author.findUnique({
+          where: { id },
+          include: {
             articles: {
               where: { status: 'PUBLISHED' },
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                summary: true,
+                imageUrl: true,
+                publishedAt: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                  },
+                },
+              },
+              orderBy: { publishedAt: 'desc' },
+            },
+            _count: {
+              select: {
+                articles: {
+                  where: { status: 'PUBLISHED' },
+                },
+              },
             },
           },
-        },
-      },
-    });
+        });
+      }
+    );
 
     if (!author) {
       throw createError('Author not found', 404);
