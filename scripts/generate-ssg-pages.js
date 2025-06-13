@@ -21,7 +21,7 @@ const config = {
 
 // Supabase configuration (same as admin dashboard)
 const SUPABASE_URL = 'https://zrsfmghkjhxkjjzkigck.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2OTc4NzQsImV4cCI6MjA1MjI3Mzg3NH0.Qs8-Qs_Qs8-Qs_Qs8-Qs_Qs8-Qs_Qs8-Qs_Qs8-Qs_Qs8';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM';
 
 // Environment detection
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
@@ -55,7 +55,7 @@ async function fetchArticles() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/articles?select=*,author:authors(*),category:categories(*)&status=eq.PUBLISHED`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/articles?select=*,author:authors(*),category:categories(*),tags(*)&status=eq.PUBLISHED&order=createdAt.desc`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -218,8 +218,19 @@ async function generateStaticPages() {
     }
   }
 
+  // Generate category pages
+  await generateCategoryPages(articles.filter(a => a.status === 'PUBLISHED'));
+
+  // Generate search index
+  await generateSearchIndex(articles.filter(a => a.status === 'PUBLISHED'));
+
   // Generate sitemap with article URLs
   generateSitemap(articles.filter(a => a.status === 'PUBLISHED'));
+
+  // Trigger deployment webhook if in production
+  if (isProduction) {
+    await triggerDeploymentWebhook();
+  }
 
   console.log(`🎉 Generated ${articles.filter(a => a.status === 'PUBLISHED').length} static pages`);
 }
@@ -277,6 +288,199 @@ ${urls.map(url => `  <url>
   const sitemapPath = path.join(config.outputDir, 'sitemap-articles.xml');
   fs.writeFileSync(sitemapPath, sitemap);
   console.log('✅ Generated sitemap-articles.xml');
+}
+
+// Generate category listing pages
+async function generateCategoryPages(articles) {
+  console.log('📂 Generating category pages...');
+
+  // Group articles by category
+  const categoriesMap = new Map();
+
+  articles.forEach(article => {
+    const categoryName = article.category?.name || 'Uncategorized';
+    const categorySlug = article.category?.slug || 'uncategorized';
+
+    if (!categoriesMap.has(categorySlug)) {
+      categoriesMap.set(categorySlug, {
+        name: categoryName,
+        slug: categorySlug,
+        articles: []
+      });
+    }
+
+    categoriesMap.get(categorySlug).articles.push(article);
+  });
+
+  // Create category directory
+  const categoryDir = path.join(config.outputDir, 'category');
+  if (!fs.existsSync(categoryDir)) {
+    fs.mkdirSync(categoryDir, { recursive: true });
+  }
+
+  // Generate individual category pages
+  for (const [slug, category] of categoriesMap) {
+    const html = generateCategoryHTML(category);
+    const filePath = path.join(categoryDir, `${slug}.html`);
+    fs.writeFileSync(filePath, html);
+    console.log(`✅ Generated: /category/${slug}.html (${category.articles.length} articles)`);
+  }
+
+  console.log(`📂 Generated ${categoriesMap.size} category pages`);
+}
+
+// Generate HTML template for category pages
+function generateCategoryHTML(category) {
+  const articlesHtml = category.articles.map(article => `
+    <article class="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      ${article.imageUrl ? `<img src="${article.imageUrl}" alt="${article.title}" class="w-full h-48 object-cover">` : ''}
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-2">
+          <a href="/article/${article.slug}" class="text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400">
+            ${article.title}
+          </a>
+        </h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-4">${article.summary || ''}</p>
+        <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-500">
+          <span>By ${article.author?.name || 'Onward Dominicans'}</span>
+          <time datetime="${article.publishedAt || article.createdAt}">
+            ${new Date(article.publishedAt || article.createdAt).toLocaleDateString()}
+          </time>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${category.name} - Onward Dominicans</title>
+    <meta name="description" content="Browse ${category.name} articles from Onward Dominicans - Dominican community news and culture">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="${category.name} - Onward Dominicans">
+    <meta property="og:description" content="Browse ${category.name} articles from Onward Dominicans">
+    <meta property="og:url" content="${config.baseUrl}/category/${category.slug}">
+    <meta property="og:site_name" content="Onward Dominicans">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="${category.name} - Onward Dominicans">
+    <meta name="twitter:description" content="Browse ${category.name} articles from Onward Dominicans">
+
+    <!-- SEO -->
+    <link rel="canonical" href="${config.baseUrl}/category/${category.slug}">
+    <meta name="robots" content="index, follow">
+
+    <link rel="stylesheet" href="/assets/index-Cc5yL0pL.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+    <div id="root">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <header class="mb-8">
+                <nav class="mb-4">
+                    <a href="/" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                        ← Back to Home
+                    </a>
+                </nav>
+                <h1 class="text-4xl font-bold mb-4">${category.name}</h1>
+                <p class="text-xl text-slate-600 dark:text-slate-400">
+                    ${category.articles.length} article${category.articles.length !== 1 ? 's' : ''} in this category
+                </p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${articlesHtml}
+            </div>
+        </div>
+    </div>
+
+    <!-- Load React app for interactivity -->
+    <script type="module" src="/assets/main-DynZKHKR.js"></script>
+</body>
+</html>`;
+}
+
+// Trigger deployment webhook for automated regeneration
+async function triggerDeploymentWebhook() {
+  try {
+    const webhookUrl = process.env.VERCEL_DEPLOY_HOOK || process.env.DEPLOY_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+      console.log('ℹ️  No deployment webhook configured');
+      return;
+    }
+
+    console.log('🚀 Triggering deployment webhook...');
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        trigger: 'ssg-regeneration',
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (response.ok) {
+      console.log('✅ Deployment webhook triggered successfully');
+    } else {
+      console.log('⚠️  Deployment webhook failed');
+    }
+  } catch (error) {
+    console.log('⚠️  Deployment webhook error:', error.message);
+  }
+}
+
+// Generate search index for client-side search
+async function generateSearchIndex(articles) {
+  console.log('🔍 Generating search index...');
+
+  const searchIndex = articles.map(article => ({
+    id: article.id,
+    title: article.title,
+    summary: article.summary || '',
+    content: stripHtml(article.content || ''),
+    slug: article.slug,
+    url: `/article/${article.slug}`,
+    author: article.author?.name || 'Onward Dominicans',
+    category: article.category?.name || 'Uncategorized',
+    categorySlug: article.category?.slug || 'uncategorized',
+    tags: (article.tags || []).map(tag => tag.name || tag).join(' '),
+    publishedAt: article.publishedAt || article.createdAt,
+    imageUrl: article.imageUrl || ''
+  }));
+
+  // Create search index JSON
+  const indexPath = path.join(config.outputDir, 'search-index.json');
+  fs.writeFileSync(indexPath, JSON.stringify(searchIndex, null, 2));
+
+  // Create lightweight search index for faster loading
+  const lightIndex = searchIndex.map(item => ({
+    id: item.id,
+    title: item.title,
+    summary: item.summary.substring(0, 150),
+    url: item.url,
+    author: item.author,
+    category: item.category,
+    publishedAt: item.publishedAt,
+    imageUrl: item.imageUrl
+  }));
+
+  const lightIndexPath = path.join(config.outputDir, 'search-index-light.json');
+  fs.writeFileSync(lightIndexPath, JSON.stringify(lightIndex, null, 2));
+
+  console.log(`✅ Generated search index with ${searchIndex.length} articles`);
+}
+
+// Strip HTML tags from content
+function stripHtml(html) {
+  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
 // Run the generation

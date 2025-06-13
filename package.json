@@ -39,7 +39,9 @@
     "prerender": "node scripts/prerender-pages.js",
     "enhance:admin": "node scripts/enhance-admin-integration.js",
     "ssg:generate": "node scripts/generate-ssg-pages.js",
-    "ssg:webhook": "node scripts/ssg-webhook.js"
+    "ssg:webhook": "node scripts/ssg-webhook.js",
+    "search:generate": "node scripts/generate-search-index.js",
+    "optimize:images": "node scripts/optimize-images.js"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",

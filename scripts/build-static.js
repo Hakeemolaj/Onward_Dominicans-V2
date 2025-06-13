@@ -54,6 +54,14 @@ try {
   } catch (error) {
     console.warn('⚠️  Prerendering failed:', error.message);
   }
+
+  // Optimize images and add lazy loading
+  console.log('🖼️  Optimizing images...');
+  try {
+    execSync('node scripts/optimize-images.js', { stdio: 'inherit' });
+  } catch (error) {
+    console.warn('⚠️  Image optimization failed:', error.message);
+  }
   
   console.log('🎉 Build process completed!');
   

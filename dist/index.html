@@ -264,8 +264,119 @@
     <meta property="og:url" content="https://odmailsu.vercel.app">
     <meta property="og:type" content="website">
     <link rel="canonical" href="https://odmailsu.vercel.app">
-  </head>
+  <style>
+/* Lazy Loading Styles */
+.lazy-load {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  background-color: #f1f5f9;
+  background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+                    linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+                    linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+                    linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  animation: loading-shimmer 1.5s infinite linear;
+}
+
+.lazy-load.loaded {
+  opacity: 1;
+  background: none;
+  animation: none;
+}
+
+@keyframes loading-shimmer {
+  0% { background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+  100% { background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px; }
+}
+
+/* Image optimization */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-container::before {
+  content: '';
+  display: block;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+.image-container img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+</style></head>
 <body>
     <div id="root"></div>
 
-</body></html>
+<script>
+// Lazy Loading JavaScript
+(function() {
+  'use strict';
+  
+  // Intersection Observer for lazy loading
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        
+        // Load the actual image
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+        }
+        
+        if (img.dataset.srcset) {
+          img.srcset = img.dataset.srcset;
+        }
+        
+        // Remove data attributes
+        delete img.dataset.src;
+        delete img.dataset.srcset;
+        
+        // Stop observing this image
+        observer.unobserve(img);
+      }
+    });
+  }, {
+    rootMargin: '50px 0px',
+    threshold: 0.01
+  });
+  
+  // Observe all lazy-load images
+  function initLazyLoading() {
+    const lazyImages = document.querySelectorAll('.lazy-load');
+    lazyImages.forEach(img => imageObserver.observe(img));
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLazyLoading);
+  } else {
+    initLazyLoading();
+  }
+  
+  // Fallback for browsers without Intersection Observer
+  if (!('IntersectionObserver' in window)) {
+    const lazyImages = document.querySelectorAll('.lazy-load');
+    lazyImages.forEach(img => {
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+      }
+      if (img.dataset.srcset) {
+        img.srcset = img.dataset.srcset;
+      }
+      img.classList.add('loaded');
+    });
+  }
+})();
+</script></body></html>

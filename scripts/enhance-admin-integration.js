@@ -37,13 +37,14 @@ function enhanceAdminDashboard() {
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">SEO Static Pages</h3>
-                <p class="text-sm text-green-600 dark:text-green-400">Generate static pages for better search engine indexing</p>
+                <p class="text-sm text-green-600 dark:text-green-400">Regenerate static pages with latest content for better SEO</p>
+                <p class="text-xs text-green-500 dark:text-green-500 mt-1">Includes: Article pages, Category pages, Search index, Sitemap</p>
             </div>
             <button onclick="generateSSGPages()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg btn-primary flex items-center space-x-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
-                <span>Generate Static Pages</span>
+                <span>Regenerate Site</span>
             </button>
         </div>
     </div>`;
@@ -61,28 +62,35 @@ function enhanceAdminDashboard() {
         window.generateSSGPages = async function() {
             const button = event.target.closest('button');
             const originalText = button.innerHTML;
-            
+
             try {
-                button.innerHTML = '<div class="spinner inline-block mr-2"></div>Generating...';
+                button.innerHTML = '<div class="spinner inline-block mr-2"></div>Regenerating...';
                 button.disabled = true;
-                
-                // Call the SSG generation endpoint or script
-                const response = await fetch('/api/generate-ssg', {
+
+                // Call the SSG regeneration API endpoint
+                const response = await fetch('/api/regenerate-ssg', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer default-token'
+                    },
+                    body: JSON.stringify({
+                        trigger: 'admin-dashboard',
+                        timestamp: new Date().toISOString()
+                    })
                 });
-                
-                if (response.ok) {
-                    adminDashboard.showToast('✅ Static pages generated successfully!', 'success');
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    adminDashboard.showToast('✅ Static pages regeneration triggered! Site will update in ~2 minutes.', 'success');
                 } else {
-                    throw new Error('Generation failed');
+                    throw new Error(result.error || 'Generation failed');
                 }
-                
+
             } catch (error) {
                 console.error('SSG Generation error:', error);
-                adminDashboard.showToast('❌ Failed to generate static pages', 'error');
+                adminDashboard.showToast('❌ Failed to trigger static page regeneration: ' + error.message, 'error');
             } finally {
                 button.innerHTML = originalText;
                 button.disabled = false;
