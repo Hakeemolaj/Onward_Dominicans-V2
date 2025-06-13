@@ -2,6 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/nyegaman",
@@ -12,7 +13,15 @@
       "destination": "/nyegaman.html"
     },
     {
-      "source": "/((?!api/|nyegaman).*)",
+      "source": "/article/(.*)",
+      "destination": "/article/$1.html"
+    },
+    {
+      "source": "/category/(.*)",
+      "destination": "/category/$1.html"
+    },
+    {
+      "source": "/((?!api/|nyegaman|article|category).*)",
       "destination": "/index.html"
     }
   ],

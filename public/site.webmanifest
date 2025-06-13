@@ -60,7 +60,31 @@
       "name": "Latest News",
       "short_name": "News",
       "description": "View the latest Dominican community news",
-      "url": "/#news-feed",
+      "url": "/news",
+      "icons": [
+        {
+          "src": "/favicon-32x32.png",
+          "sizes": "32x32"
+        }
+      ]
+    },
+    {
+      "name": "Community Events",
+      "short_name": "Events",
+      "description": "Browse community events and celebrations",
+      "url": "/category/community-events",
+      "icons": [
+        {
+          "src": "/favicon-32x32.png",
+          "sizes": "32x32"
+        }
+      ]
+    },
+    {
+      "name": "Food & Cuisine",
+      "short_name": "Food",
+      "description": "Traditional Dominican recipes and cooking tips",
+      "url": "/category/food-cuisine",
       "icons": [
         {
           "src": "/favicon-32x32.png",

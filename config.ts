@@ -1,30 +1,44 @@
-// Application configuration
+// Application configuration - Compatible with both Vite and Next.js
+const getEnvVar = (key: string, fallback: string = '') => {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // Browser environment - use process.env for Next.js or import.meta.env for Vite
+    return (process.env as any)[key] || (window as any).__ENV__?.[key] || fallback;
+  }
+
+  // Server environment - use process.env
+  return process.env[key] || fallback;
+};
+
+const isDev = process.env.NODE_ENV === 'development';
+const isProd = process.env.NODE_ENV === 'production';
+
 export const config = {
   // API Configuration - Use Supabase REST API by default
-  apiUrl: import.meta.env.VITE_API_URL || (import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL + '/rest/v1' : 'http://localhost:3001/api'),
+  apiUrl: getEnvVar('VITE_API_URL') || (getEnvVar('VITE_SUPABASE_URL') ? getEnvVar('VITE_SUPABASE_URL') + '/rest/v1' : 'http://localhost:3001/api'),
 
   // Supabase Configuration
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://zrsfmghkjhxkjjzkigck.supabase.co',
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-  
+  supabaseUrl: getEnvVar('VITE_SUPABASE_URL') || 'https://zrsfmghkjhxkjjzkigck.supabase.co',
+  supabaseAnonKey: getEnvVar('VITE_SUPABASE_ANON_KEY') || '',
+
   // Feature Flags
   features: {
     // Show API demo section (development only)
-    showApiDemo: import.meta.env.DEV || import.meta.env.VITE_SHOW_API_DEMO === 'true',
-    
+    showApiDemo: isDev || getEnvVar('VITE_SHOW_API_DEMO') === 'true',
+
     // Enable admin features
-    enableAdmin: import.meta.env.VITE_ENABLE_ADMIN === 'true',
-    
+    enableAdmin: getEnvVar('VITE_ENABLE_ADMIN') === 'true',
+
     // Show debug information
-    showDebug: import.meta.env.DEV,
+    showDebug: isDev,
   },
-  
+
   // Environment
-  isDevelopment: import.meta.env.DEV,
-  isProduction: import.meta.env.PROD,
-  
+  isDevelopment: isDev,
+  isProduction: isProd,
+
   // External APIs
-  geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  geminiApiKey: getEnvVar('VITE_GEMINI_API_KEY'),
 };
 
 // Security: Don't expose sensitive config in production

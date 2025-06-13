@@ -30,21 +30,77 @@
     "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html",
     "seo:post-verification": "node scripts/post-verification-checklist.js",
     "seo:validate-sitemap": "node scripts/validate-sitemap.js",
-    "seo:quick-fixes": "node scripts/seo-quick-fixes.js"
+    "seo:quick-fixes": "node scripts/seo-quick-fixes.js",
+    "build:static": "node scripts/build-static.js",
+    "build:static-force": "npm run build && react-snap",
+    "build:ssg": "npm run build && node scripts/generate-ssg-pages.js",
+    "generate:static": "node scripts/generate-static-pages.js",
+    "build:seo": "npm run build && npm run generate:static",
+    "prerender": "node scripts/prerender-pages.js",
+    "enhance:admin": "node scripts/enhance-admin-integration.js",
+    "ssg:generate": "node scripts/generate-ssg-pages.js",
+    "ssg:webhook": "node scripts/ssg-webhook.js",
+    "search:generate": "node scripts/generate-search-index.js",
+    "optimize:images": "node scripts/optimize-images.js",
+    "next:dev": "next dev",
+    "next:build": "next build",
+    "next:start": "next start",
+    "next:export": "next build && next export",
+    "preserve:admin": "node scripts/preserve-admin-dashboard.js",
+    "build:hybrid": "node scripts/hybrid-build.js",
+    "migrate:nextjs": "npm run preserve:admin && npm run next:build"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
+    "@supabase/supabase-js": "^2.50.0",
+    "@vercel/analytics": "^1.5.0",
+    "next": "^15.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwindcss": "^3.4.17"
+    "react-router-dom": "^7.6.2",
+    "react-snap": "^1.23.0",
+    "tailwindcss": "^3.4.17",
+    "vite-plugin-ssr": "^0.4.142",
+    "web-vitals": "^5.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "19.1.8",
     "@vitejs/plugin-react": "^4.5.1",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.0",
     "postcss": "^8.5.4",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
+  },
+  "reactSnap": {
+    "source": "dist",
+    "minifyHtml": {
+      "collapseWhitespace": false,
+      "removeComments": false
+    },
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
+    "crawlFrom": "/",
+    "include": [
+      "/",
+      "/news",
+      "/culture",
+      "/gallery",
+      "/about",
+      "/article/celebrating-dominican-independence-day-2024",
+      "/article/traditional-mangu-family-recipe",
+      "/article/youth-leadership-program-graduates-2024",
+      "/article/preserving-musical-heritage-merengue"
+    ],
+    "skipThirdPartyRequests": true,
+    "cacheAjaxRequests": false,
+    "preloadImages": true,
+    "fixWebpackChunksIssue": false,
+    "removeBlobs": true,
+    "fixInsertRule": true,
+    "asyncScriptTags": true
   }
 }

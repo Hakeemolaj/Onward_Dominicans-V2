@@ -2,64 +2,49 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/</loc>
+    <loc>https://odmailsu.vercel.app/</loc>
     <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/article/celebrating-dominican-independence-day-2024</loc>
+    <loc>https://odmailsu.vercel.app/article/celebrating-dominican-independence-day-2024</loc>
     <lastmod>2024-02-27T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/article/traditional-mangu-family-recipe</loc>
+    <loc>https://odmailsu.vercel.app/article/traditional-mangu-family-recipe</loc>
     <lastmod>2024-02-20T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/article/youth-leadership-program-graduates-2024</loc>
+    <loc>https://odmailsu.vercel.app/article/youth-leadership-program-graduates-2024</loc>
     <lastmod>2024-02-15T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/article/preserving-musical-heritage-merengue</loc>
+    <loc>https://odmailsu.vercel.app/article/preserving-musical-heritage-merengue</loc>
     <lastmod>2024-02-10T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
-
   <url>
-    <loc>https://onward-dominicans.vercel.app/news</loc>
+    <loc>https://odmailsu.vercel.app/news</loc>
     <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/culture</loc>
-    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
 
   <url>
-    <loc>https://onward-dominicans.vercel.app/news</loc>
-    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/culture</loc>
+    <loc>https://odmailsu.vercel.app/culture</loc>
     <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
