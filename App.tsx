@@ -3,6 +3,11 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { setupPerformanceMonitoring, performanceTracker } from './utils/performanceMonitoring';
 import { useErrorHandler } from './utils/errorHandling';
+import { analytics } from './utils/analytics';
+import { pwaManager } from './utils/pwaUtils';
+import { realtimeManager } from './utils/realtime';
+import { advancedCache } from './utils/advancedCache';
+import { monitoring } from './utils/monitoring';
 import TopHeader from './components/TopHeader';
 import NavBar from './components/NavBar';
 import HeroSection from './components/HeroSection';
@@ -19,6 +24,7 @@ import SlideshowModal from './components/SlideshowModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import SEOHead from './components/SEOHead';
 import SEOAnalytics from './components/SEOAnalytics';
+import FeatureNotification from './components/FeatureNotification';
 // import ApiExample from './components/ApiExample'; // Demo only - remove for production
 
 import { NewsArticle as NewsArticleType, GalleryItem, GalleryStack } from './types';
@@ -39,15 +45,59 @@ const App: React.FC = () => {
     [SectionId.CONTACT_US]: useRef<HTMLDivElement>(null),
   };
 
-  // Initialize performance monitoring
+  // Initialize performance monitoring and advanced features
   useEffect(() => {
-    setupPerformanceMonitoring();
+    const initializeApp = async () => {
+      console.log('🚀 Initializing Onward Dominicans with advanced features...');
 
-    // Track app initialization time
-    const initStart = performance.now();
-    const initTime = performance.now() - initStart;
-    performanceTracker.trackComponentRender('App-Init', initTime);
-  }, []);
+      // Track app initialization time
+      const initStart = performance.now();
+
+      // Initialize performance monitoring
+      setupPerformanceMonitoring();
+
+      // Initialize analytics
+      analytics.init();
+      console.log('✅ Analytics initialized');
+
+      // Initialize PWA features
+      await pwaManager.init();
+      console.log('✅ PWA features initialized');
+
+      // Initialize advanced cache
+      await advancedCache.init();
+      console.log('✅ Advanced cache initialized');
+
+      // Initialize real-time features
+      try {
+        await realtimeManager.connect();
+        console.log('✅ Real-time features connected');
+      } catch (error) {
+        console.warn('⚠️ Real-time features unavailable:', error);
+      }
+
+      // Initialize monitoring
+      console.log('✅ Monitoring system active');
+
+      // Track initialization completion
+      const initTime = performance.now() - initStart;
+      performanceTracker.trackComponentRender('App-Init', initTime);
+      analytics.track('app_initialized', 'system', { initTime });
+
+      console.log(`🎉 App initialized in ${initTime.toFixed(2)}ms with enterprise features!`);
+    };
+
+    initializeApp().catch(error => {
+      console.error('❌ App initialization error:', error);
+      handleError(error, { component: 'App', operation: 'initialization' });
+    });
+
+    // Cleanup on unmount
+    return () => {
+      realtimeManager.disconnect();
+      monitoring.cleanup();
+    };
+  }, [handleError]);
 
   const [activeSection, setActiveSection] = useState<SectionId>(SectionId.HOME);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
@@ -406,6 +456,9 @@ const App: React.FC = () => {
           interval={5000}
         />
       )}
+
+      {/* Feature Notification */}
+      <FeatureNotification />
 
       {/* Vercel Analytics */}
       <Analytics />

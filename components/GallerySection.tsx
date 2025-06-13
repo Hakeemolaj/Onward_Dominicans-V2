@@ -3,6 +3,7 @@ import { SectionProps, GalleryItem, GalleryCategory, GalleryStack } from '../typ
 import { apiService } from '../services/apiService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
+import OptimizedLazyImage from './OptimizedLazyImage';
 import { useApiData } from '../hooks/useApiData';
 import { useImageLoader } from '../utils/componentHelpers';
 import { MemoCache, PerformanceMonitor } from '../utils/performance';
@@ -562,11 +563,12 @@ const GallerySection = forwardRef<HTMLDivElement, GallerySectionProps>((props, r
                     )}
 
                     {/* Main Image */}
-                    <img
+                    <OptimizedLazyImage
                       src={stack.coverImage.thumbnailUrl || stack.coverImage.imageUrl}
                       alt={stack.coverImage.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 relative z-20 rounded-lg"
                       loading="lazy"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
 
                     {/* Stack Count Badge */}
@@ -630,11 +632,12 @@ const GallerySection = forwardRef<HTMLDivElement, GallerySectionProps>((props, r
                   onClick={() => handleImageClick(item)}
                 >
                   <div className="aspect-w-4 aspect-h-3 relative">
-                    <img
+                    <OptimizedLazyImage
                       src={item.thumbnailUrl || item.imageUrl}
                       alt={item.title}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
