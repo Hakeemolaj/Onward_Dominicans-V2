@@ -1,5 +1,6 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import TopHeader from './components/TopHeader';
 import NavBar from './components/NavBar';
 import HeroSection from './components/HeroSection';
@@ -387,6 +388,9 @@ const App: React.FC = () => {
           interval={5000}
         />
       )}
+
+      {/* Vercel Analytics */}
+      <Analytics />
     </div>
   );
 };

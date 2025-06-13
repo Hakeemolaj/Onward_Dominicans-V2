@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLoaderData, Link } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import SEOHead from '../../components/SEOHead';
 import SEOAnalytics from '../../components/SEOAnalytics';
 import TopHeader from '../../components/TopHeader';
@@ -254,6 +255,7 @@ const ArticlePage: React.FC = () => {
 
       <Footer />
       <BackToTopButton />
+      <Analytics />
     </div>
   );
 };
