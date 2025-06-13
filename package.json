@@ -31,8 +31,8 @@
     "seo:post-verification": "node scripts/post-verification-checklist.js",
     "seo:validate-sitemap": "node scripts/validate-sitemap.js",
     "seo:quick-fixes": "node scripts/seo-quick-fixes.js",
-    "build:static": "npm run build && react-snap",
-    "postbuild": "react-snap",
+    "build:static": "node scripts/build-static.js",
+    "build:static-force": "npm run build && react-snap",
     "generate:static": "node scripts/generate-static-pages.js",
     "build:seo": "npm run build && npm run generate:static"
   },
