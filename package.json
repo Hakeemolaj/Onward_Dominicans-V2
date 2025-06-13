@@ -41,11 +41,19 @@
     "ssg:generate": "node scripts/generate-ssg-pages.js",
     "ssg:webhook": "node scripts/ssg-webhook.js",
     "search:generate": "node scripts/generate-search-index.js",
-    "optimize:images": "node scripts/optimize-images.js"
+    "optimize:images": "node scripts/optimize-images.js",
+    "next:dev": "next dev",
+    "next:build": "next build",
+    "next:start": "next start",
+    "next:export": "next build && next export",
+    "preserve:admin": "node scripts/preserve-admin-dashboard.js",
+    "build:hybrid": "node scripts/hybrid-build.js",
+    "migrate:nextjs": "npm run preserve:admin && npm run next:build"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
     "@vercel/analytics": "^1.5.0",
+    "next": "^15.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
@@ -55,6 +63,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "19.1.8",
     "@vitejs/plugin-react": "^4.5.1",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.0",

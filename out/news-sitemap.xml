@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  
+  <!-- Recent News Articles for Google News -->
+  <url>
+    <loc>https://odmailsu.vercel.app/article/celebrating-dominican-independence-day-2024</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-02-27T10:00:00Z</news:publication_date>
+      <news:title>Celebrating Dominican Independence Day: A Community United</news:title>
+      <news:keywords>Dominican Independence Day, community celebration, cultural events, Dominican Republic, heritage, tradition</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+  <url>
+    <loc>https://odmailsu.vercel.app/article/traditional-mangu-family-recipe</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-02-20T08:30:00Z</news:publication_date>
+      <news:title>The Art of Making Traditional Mangu: A Family Recipe</news:title>
+      <news:keywords>Dominican food, mangu recipe, traditional cooking, Caribbean cuisine, Dominican culture, family recipes</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+  <url>
+    <loc>https://odmailsu.vercel.app/article/youth-leadership-program-graduates-2024</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-02-15T14:00:00Z</news:publication_date>
+      <news:title>Youth Leadership Program Graduates First Class</news:title>
+      <news:keywords>youth leadership, Dominican youth, education, community development, leadership training, graduation</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+  <url>
+    <loc>https://odmailsu.vercel.app/article/preserving-musical-heritage-merengue</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-02-10T16:45:00Z</news:publication_date>
+      <news:title>Preserving Our Musical Heritage: The Sounds of Merengue</news:title>
+      <news:keywords>merengue music, Dominican culture, musical heritage, traditional music, Caribbean music, cultural preservation</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+  <url>
+    <loc>https://odmailsu.vercel.app/article/dominican-american-heritage-month-2024</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-02-05T12:00:00Z</news:publication_date>
+      <news:title>Celebrating Dominican American Heritage Month: Our Stories Matter</news:title>
+      <news:keywords>Dominican American Heritage Month, cultural celebration, Dominican diaspora, heritage, community pride, cultural identity</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+  <url>
+    <loc>https://odmailsu.vercel.app/article/small-business-spotlight-dominican-entrepreneurs</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Onward Dominicans</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2024-01-30T09:15:00Z</news:publication_date>
+      <news:title>Small Business Spotlight: Dominican Entrepreneurs Making Their Mark</news:title>
+      <news:keywords>Dominican entrepreneurs, small business, economic development, community business, entrepreneurship, success stories</news:keywords>
+      <news:stock_tickers></news:stock_tickers>
+    </news:news>
+  </url>
+  
+</urlset>

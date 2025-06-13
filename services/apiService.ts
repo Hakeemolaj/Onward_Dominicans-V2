@@ -6,8 +6,12 @@ import { config } from '../config';
 
 // Auto-detect API base URL based on current hostname
 const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  // Check for environment variable (compatible with both Vite and Next.js)
+  const envApiUrl = (typeof process !== 'undefined' && process.env?.VITE_API_URL) ||
+                   (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_API_URL);
+
+  if (envApiUrl) {
+    return envApiUrl;
   }
 
   const currentHost = window.location.hostname;
@@ -79,29 +83,41 @@ class ApiService {
   }
 
   private loadToken(): void {
-    this.token = localStorage.getItem('auth_token');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      this.token = localStorage.getItem('auth_token');
+    }
   }
 
   private saveToken(token: string): void {
     this.token = token;
-    localStorage.setItem('auth_token', token);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('auth_token', token);
+    }
   }
 
   private removeToken(): void {
     this.token = null;
-    localStorage.removeItem('auth_token');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('auth_token');
+    }
   }
 
   private validateAndClearToken(): void {
-    // Force clear any existing tokens to prevent 401 errors
-    console.log('🧹 Force clearing all stored tokens to prevent authentication issues');
-    this.removeToken();
-    // Also clear any other possible token storage locations
-    localStorage.removeItem('token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('admin-token');
-    sessionStorage.removeItem('auth_token');
-    sessionStorage.removeItem('token');
+    // Force clear any existing tokens to prevent 401 errors (only in browser)
+    if (typeof window !== 'undefined') {
+      console.log('🧹 Force clearing all stored tokens to prevent authentication issues');
+      this.removeToken();
+      // Also clear any other possible token storage locations
+      if (window.localStorage) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('admin-token');
+      }
+      if (window.sessionStorage) {
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('token');
+      }
+    }
   }
 
   private async request<T>(

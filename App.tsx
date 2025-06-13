@@ -111,7 +111,7 @@ const App: React.FC = () => {
           },
           fullContent: article.content,
           slug: article.slug,
-          tags: article.tags?.map(tag => tag.name) || []
+          tags: article.tags?.map((tag: any) => tag.name) || []
         };
 
         setFeaturedArticle(transformedArticle);
@@ -221,11 +221,12 @@ const App: React.FC = () => {
        if (!ticking) {
         window.requestAnimationFrame(() => {
           let bestCandidate: IntersectionObserverEntry | null = null;
-          
-          entries.forEach(entry => {
+
+          entries.forEach((entry: IntersectionObserverEntry) => {
             if (entry.isIntersecting) {
-              if (!entry.target.classList.contains('is-visible')) {
-                entry.target.classList.add('is-visible');
+              const target = entry.target as HTMLElement;
+              if (!target.classList.contains('is-visible')) {
+                target.classList.add('is-visible');
               }
               // Prioritize entries that are more fully in view or closer to the top
               const entryTop = entry.boundingClientRect.top;
@@ -236,11 +237,14 @@ const App: React.FC = () => {
           });
 
           if (bestCandidate) {
-             setActiveSection(bestCandidate.target.id as SectionId);
-          } else if (window.scrollY < window.innerHeight * 0.3) { 
+             const target = bestCandidate.target as HTMLElement;
+             if (target && target.id) {
+               setActiveSection(target.id as SectionId);
+             }
+          } else if (window.scrollY < window.innerHeight * 0.3) {
             setActiveSection(SectionId.HOME);
           }
-          
+
           ticking = false;
         });
         ticking = true;
@@ -262,7 +266,7 @@ const App: React.FC = () => {
         });
         if (visibleSections.length > 0) {
              // Simple heuristic: pick the first one that's significantly visible
-            setActiveSection(visibleSections[0]!.id as SectionId);
+            setActiveSection((visibleSections[0] as HTMLElement).id as SectionId);
         }
     }
     
