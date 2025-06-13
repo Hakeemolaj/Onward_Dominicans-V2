@@ -38,10 +38,11 @@ try {
     console.log('💡 For SEO benefits, consider using a different SSG approach');
   }
   
-  // Generate SSG pages from admin dashboard content
-  console.log('📄 Generating SSG pages from admin dashboard...');
+  // Generate enhanced SSG pages from admin dashboard content
+  console.log('📄 Generating enhanced SSG pages from admin dashboard...');
   try {
     execSync('node scripts/generate-ssg-pages.js', { stdio: 'inherit' });
+    console.log('✅ SSG pages generated successfully');
   } catch (error) {
     console.warn('⚠️  SSG page generation failed:', error.message);
   }

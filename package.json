@@ -36,7 +36,10 @@
     "build:ssg": "npm run build && node scripts/generate-ssg-pages.js",
     "generate:static": "node scripts/generate-static-pages.js",
     "build:seo": "npm run build && npm run generate:static",
-    "prerender": "node scripts/prerender-pages.js"
+    "prerender": "node scripts/prerender-pages.js",
+    "enhance:admin": "node scripts/enhance-admin-integration.js",
+    "ssg:generate": "node scripts/generate-ssg-pages.js",
+    "ssg:webhook": "node scripts/ssg-webhook.js"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
