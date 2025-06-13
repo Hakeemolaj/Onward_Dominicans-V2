@@ -27,12 +27,21 @@
     "seo:sitemap": "node scripts/generate-sitemap.js",
     "seo:validate": "node scripts/validate-seo.js",
     "seo:codes": "node scripts/update-tracking-codes.js",
-    "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html"
+    "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html",
+    "seo:post-verification": "node scripts/post-verification-checklist.js",
+    "seo:validate-sitemap": "node scripts/validate-sitemap.js",
+    "seo:quick-fixes": "node scripts/seo-quick-fixes.js",
+    "build:static": "npm run build && react-snap",
+    "postbuild": "react-snap",
+    "generate:static": "node scripts/generate-static-pages.js",
+    "build:seo": "npm run build && npm run generate:static"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2",
+    "react-snap": "^1.23.0",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
@@ -43,5 +52,35 @@
     "postcss": "^8.5.4",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
+  },
+  "reactSnap": {
+    "source": "dist",
+    "minifyHtml": {
+      "collapseWhitespace": false,
+      "removeComments": false
+    },
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
+    "crawlFrom": "/",
+    "include": [
+      "/",
+      "/news",
+      "/culture",
+      "/gallery",
+      "/about",
+      "/article/celebrating-dominican-independence-day-2024",
+      "/article/traditional-mangu-family-recipe",
+      "/article/youth-leadership-program-graduates-2024",
+      "/article/preserving-musical-heritage-merengue"
+    ],
+    "skipThirdPartyRequests": true,
+    "cacheAjaxRequests": false,
+    "preloadImages": true,
+    "fixWebpackChunksIssue": false,
+    "removeBlobs": true,
+    "fixInsertRule": true,
+    "asyncScriptTags": true
   }
 }

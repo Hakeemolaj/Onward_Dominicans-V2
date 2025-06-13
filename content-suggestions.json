@@ -1,0 +1,30 @@
+{
+  "immediate_articles": [
+    {
+      "title": "Dominican Independence Day 2025: Celebrating 181 Years of Freedom",
+      "slug": "dominican-independence-day-2025",
+      "keywords": "Dominican independence day, February 27, Dominican history",
+      "content_outline": "History, celebrations, traditions, community events"
+    },
+    {
+      "title": "Traditional Dominican Christmas: Nochebuena Traditions and Recipes",
+      "slug": "dominican-christmas-traditions",
+      "keywords": "Dominican Christmas, Nochebuena, Dominican holiday traditions",
+      "content_outline": "Food, music, family traditions, religious customs"
+    },
+    {
+      "title": "Complete Guide to Dominican Merengue: History, Steps, and Culture",
+      "slug": "dominican-merengue-guide",
+      "keywords": "Dominican merengue, merengue dance, Dominican music",
+      "content_outline": "Origins, famous artists, dance steps, cultural significance"
+    }
+  ],
+  "content_calendar": {
+    "January": "New Year traditions, Three Kings Day",
+    "February": "Independence Day, Carnival preparations",
+    "March": "Carnival celebrations, spring festivals",
+    "April": "Easter traditions, spring recipes",
+    "May": "Mother's Day Dominican style, spring events",
+    "June": "Father's Day, summer festivals"
+  }
+}

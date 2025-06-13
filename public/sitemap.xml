@@ -1,132 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-  
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <url>
     <loc>https://onward-dominicans.vercel.app/</loc>
-    <lastmod>2025-06-12</lastmod>
+    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  
+
   <url>
-    <loc>https://onward-dominicans.vercel.app/#news-feed</loc>
-    <lastmod>2025-06-12</lastmod>
+    <loc>https://onward-dominicans.vercel.app/article/celebrating-dominican-independence-day-2024.html</loc>
+    <lastmod>2024-02-27T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://onward-dominicans.vercel.app/article/traditional-mangu-family-recipe.html</loc>
+    <lastmod>2024-02-20T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://onward-dominicans.vercel.app/article/youth-leadership-program-graduates-2024.html</loc>
+    <lastmod>2024-02-15T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://onward-dominicans.vercel.app/article/preserving-musical-heritage-merengue.html</loc>
+    <lastmod>2024-02-10T00:00:00+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+
+  <url>
+    <loc>https://onward-dominicans.vercel.app/news</loc>
+    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://onward-dominicans.vercel.app/#gallery</loc>
-    <lastmod>2025-06-12</lastmod>
+    <loc>https://onward-dominicans.vercel.app/culture</loc>
+    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-  
+
   <url>
-    <loc>https://onward-dominicans.vercel.app/#about-publication</loc>
-    <lastmod>2025-06-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://onward-dominicans.vercel.app/news</loc>
+    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://onward-dominicans.vercel.app/#meet-the-team</loc>
-    <lastmod>2025-06-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/#contact-us</loc>
-    <lastmod>2025-06-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/article/celebrating-dominican-independence-day-2024</loc>
-    <lastmod>2024-02-27</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://onward-dominicans.vercel.app/culture</loc>
+    <lastmod>2025-06-12T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <news:news>
-      <news:publication>
-        <news:name>Onward Dominicans</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>2024-02-27</news:publication_date>
-      <news:title>Celebrating Dominican Independence Day: A Community United</news:title>
-      <news:keywords>Dominican Independence Day, community celebration, cultural events</news:keywords>
-    </news:news>
-    <image:image>
-      <image:loc>https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=600&fit=crop</image:loc>
-      <image:title>Dominican Independence Day Celebration</image:title>
-      <image:caption>Community members celebrating Dominican Independence Day with traditional performances</image:caption>
-    </image:image>
   </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/article/traditional-mangu-family-recipe</loc>
-    <lastmod>2024-02-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <news:news>
-      <news:publication>
-        <news:name>Onward Dominicans</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>2024-02-20</news:publication_date>
-      <news:title>The Art of Making Traditional Mangu: A Family Recipe</news:title>
-      <news:keywords>Dominican food, mangu recipe, traditional cooking</news:keywords>
-    </news:news>
-    <image:image>
-      <image:loc>https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop</image:loc>
-      <image:title>Traditional Dominican Mangu</image:title>
-      <image:caption>Traditional Dominican mangu breakfast dish preparation</image:caption>
-    </image:image>
-  </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/article/youth-leadership-program-graduates-2024</loc>
-    <lastmod>2024-02-15</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <news:news>
-      <news:publication>
-        <news:name>Onward Dominicans</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>2024-02-15</news:publication_date>
-      <news:title>Youth Leadership Program Graduates First Class</news:title>
-      <news:keywords>youth leadership, Dominican youth, education, community development</news:keywords>
-    </news:news>
-    <image:image>
-      <image:loc>https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop</image:loc>
-      <image:title>Youth Leadership Program Graduation</image:title>
-      <image:caption>First graduating class of the Dominican Youth Leadership Program</image:caption>
-    </image:image>
-  </url>
-  
-  <url>
-    <loc>https://onward-dominicans.vercel.app/article/preserving-musical-heritage-merengue</loc>
-    <lastmod>2024-02-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <news:news>
-      <news:publication>
-        <news:name>Onward Dominicans</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>2024-02-10</news:publication_date>
-      <news:title>Preserving Our Musical Heritage: The Sounds of Merengue</news:title>
-      <news:keywords>merengue music, Dominican culture, musical heritage, traditional music</news:keywords>
-    </news:news>
-    <image:image>
-      <image:loc>https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop</image:loc>
-      <image:title>Merengue Musical Heritage</image:title>
-      <image:caption>Traditional merengue music and dance performance</image:caption>
-    </image:image>
-  </url>
-  
 </urlset>

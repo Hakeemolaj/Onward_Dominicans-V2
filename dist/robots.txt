@@ -66,3 +66,16 @@ Host: https://onward-dominicans.vercel.app
 
 # Clean URLs - redirect common patterns
 # This helps with SEO by avoiding duplicate content
+
+# Enhanced crawling for content pages
+User-agent: Googlebot
+Allow: /pages/
+Allow: /news
+Allow: /culture
+
+# Optimize crawl budget
+Crawl-delay: 1
+
+# Additional sitemaps
+Sitemap: https://onward-dominicans.vercel.app/sitemap.xml
+Sitemap: https://onward-dominicans.vercel.app/news-sitemap.xml
