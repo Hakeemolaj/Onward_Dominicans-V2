@@ -33,8 +33,10 @@
     "seo:quick-fixes": "node scripts/seo-quick-fixes.js",
     "build:static": "node scripts/build-static.js",
     "build:static-force": "npm run build && react-snap",
+    "build:ssg": "npm run build && node scripts/generate-ssg-pages.js",
     "generate:static": "node scripts/generate-static-pages.js",
-    "build:seo": "npm run build && npm run generate:static"
+    "build:seo": "npm run build && npm run generate:static",
+    "prerender": "node scripts/prerender-pages.js"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
@@ -43,7 +45,8 @@
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
     "react-snap": "^1.23.0",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "vite-plugin-ssr": "^0.4.142"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

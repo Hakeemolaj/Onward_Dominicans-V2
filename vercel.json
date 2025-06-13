@@ -13,7 +13,11 @@
       "destination": "/nyegaman.html"
     },
     {
-      "source": "/((?!api/|nyegaman).*)",
+      "source": "/article/(.*)",
+      "destination": "/article/$1.html"
+    },
+    {
+      "source": "/((?!api/|nyegaman|article).*)",
       "destination": "/index.html"
     }
   ],

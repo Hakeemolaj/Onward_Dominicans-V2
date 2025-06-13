@@ -29,6 +29,9 @@ export default defineConfig(({ mode }) => {
             nyegaman: path.resolve(__dirname, 'nyegaman.html'),
           },
         },
+        // Generate clean URLs for better SEO
+        assetsDir: 'assets',
+        sourcemap: false,
       },
     };
 });
