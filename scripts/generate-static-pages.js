@@ -91,7 +91,7 @@ As we look to the future, merengue continues to evolve while maintaining its ess
 ];
 
 function generateArticlePage(article) {
-  const articleUrl = `https://onward-dominicans.vercel.app/article/${article.slug}`;
+  const articleUrl = `https://odmailsu.vercel.app/article/${article.slug}.html`;
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -147,7 +147,7 @@ function generateArticlePage(article) {
             "name": "Onward Dominicans",
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://onward-dominicans.vercel.app/logo.png"
+                "url": "https://odmailsu.vercel.app/logo.png"
             }
         },
         "mainEntityOfPage": {
