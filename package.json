@@ -27,7 +27,10 @@
     "seo:sitemap": "node scripts/generate-sitemap.js",
     "seo:validate": "node scripts/validate-seo.js",
     "seo:codes": "node scripts/update-tracking-codes.js",
-    "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html"
+    "seo:audit": "lighthouse https://onward-dominicans.vercel.app --output=html --output-path=./seo-audit.html",
+    "seo:post-verification": "node scripts/post-verification-checklist.js",
+    "seo:validate-sitemap": "node scripts/validate-sitemap.js",
+    "seo:quick-fixes": "node scripts/seo-quick-fixes.js"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
