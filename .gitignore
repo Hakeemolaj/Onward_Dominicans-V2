@@ -5,6 +5,8 @@ backend/node_modules/
 # Build outputs
 dist/
 backend/dist/
+.next/
+out/
 
 # Environment files
 .env
