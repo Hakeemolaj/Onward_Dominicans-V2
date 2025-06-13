@@ -15,11 +15,11 @@ const isProd = process.env.NODE_ENV === 'production';
 
 export const config = {
   // API Configuration - Use Supabase REST API by default
-  apiUrl: getEnvVar('VITE_API_URL') || (getEnvVar('VITE_SUPABASE_URL') ? getEnvVar('VITE_SUPABASE_URL') + '/rest/v1' : 'http://localhost:3001/api'),
+  apiUrl: getEnvVar('VITE_API_URL') || (getEnvVar('VITE_SUPABASE_URL') ? getEnvVar('VITE_SUPABASE_URL') + '/rest/v1' : 'https://zrsfmghkjhxkjjzkigck.supabase.co/rest/v1'),
 
   // Supabase Configuration
   supabaseUrl: getEnvVar('VITE_SUPABASE_URL') || 'https://zrsfmghkjhxkjjzkigck.supabase.co',
-  supabaseAnonKey: getEnvVar('VITE_SUPABASE_ANON_KEY') || '',
+  supabaseAnonKey: getEnvVar('VITE_SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyc2ZtZ2hramh4a2pqemtpZ2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NjQwMDcsImV4cCI6MjA2NTE0MDAwN30.HGkX4r3NCfsyzk0pMsLS0N40K904zWA2CZyZ3Pr-bxM',
 
   // Feature Flags
   features: {
