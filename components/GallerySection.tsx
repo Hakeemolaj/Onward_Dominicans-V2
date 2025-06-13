@@ -1,8 +1,12 @@
-import React, { useState, useEffect, forwardRef } from 'react';
+import React, { useState, useEffect, forwardRef, useMemo, useCallback } from 'react';
 import { SectionProps, GalleryItem, GalleryCategory, GalleryStack } from '../types';
 import { apiService } from '../services/apiService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
+import { useApiData } from '../hooks/useApiData';
+import { useImageLoader } from '../utils/componentHelpers';
+import { MemoCache, PerformanceMonitor } from '../utils/performance';
+import { useErrorHandler } from '../utils/errorHandling';
 
 interface GallerySectionProps extends SectionProps {
   onImageClick?: (item: GalleryItem, allItems?: GalleryItem[]) => void;

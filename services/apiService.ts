@@ -4,14 +4,26 @@
 import { supabaseService } from './supabaseService';
 import { config } from '../config';
 
+// Configuration constants
+const CONFIG = {
+  CACHE_DURATION: 30000, // 30 seconds
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 1000, // 1 second
+  REQUEST_TIMEOUT: 10000, // 10 seconds
+} as const;
+
 // Auto-detect API base URL based on current hostname
-const getApiBaseUrl = () => {
+const getApiBaseUrl = (): string => {
   // Check for environment variable (compatible with both Vite and Next.js)
   const envApiUrl = (typeof process !== 'undefined' && process.env?.VITE_API_URL) ||
                    (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_API_URL);
 
   if (envApiUrl) {
     return envApiUrl;
+  }
+
+  if (typeof window === 'undefined') {
+    return 'https://onward-dominicans-backend-v2.onrender.com/api';
   }
 
   const currentHost = window.location.hostname;
@@ -34,7 +46,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 // Use Supabase as fallback when backend is not available
 // This ensures the frontend always works even if backend is down
-const useSupabase = () => {
+const useSupabase = (): boolean => {
   // For now, use Supabase directly since backend is having issues
   return true; // Use Supabase fallback
 };
@@ -69,11 +81,68 @@ export interface ArticleFilters {
   sortOrder?: 'asc' | 'desc';
 }
 
+// Utility functions for better error handling and retry logic
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const isRetryableError = (error: any): boolean => {
+  if (!error) return false;
+
+  // Network errors
+  if (error.name === 'TypeError' && error.message.includes('fetch')) return true;
+
+  // HTTP status codes that should be retried
+  const retryableStatusCodes = [408, 429, 500, 502, 503, 504];
+  if (error.status && retryableStatusCodes.includes(error.status)) return true;
+
+  return false;
+};
+
+const createStandardResponse = <T>(
+  success: boolean,
+  data?: T,
+  error?: string | { message: string; details?: any }
+): ApiResponse<T> => {
+  const response: ApiResponse<T> = {
+    success,
+    timestamp: new Date().toISOString()
+  };
+
+  if (success && data !== undefined) {
+    response.data = data;
+  }
+
+  if (!success && error) {
+    response.error = typeof error === 'string'
+      ? { message: error }
+      : error;
+  }
+
+  return response;
+};
+
+// Helper function to handle Supabase fallback pattern
+const handleSupabaseFallback = async <T>(
+  supabaseMethod: () => Promise<any>,
+  fallbackMethod: () => Promise<ApiResponse<T>>,
+  errorMessage: string = 'Operation failed'
+): Promise<ApiResponse<T>> => {
+  if (useSupabase()) {
+    const result = await supabaseMethod();
+
+    if (result.error) {
+      return createStandardResponse<T>(false, undefined, errorMessage);
+    }
+
+    return createStandardResponse<T>(true, result.data);
+  }
+
+  return fallbackMethod();
+};
+
 class ApiService {
   private baseUrl: string;
   private token: string | null = null;
   private requestCache: Map<string, { data: any; timestamp: number }> = new Map();
-  private readonly CACHE_DURATION = 30000; // 30 seconds cache
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
@@ -125,6 +194,15 @@ class ApiService {
     options: RequestInit = {},
     requireAuth: boolean = false
   ): Promise<ApiResponse<T>> {
+    return this.requestWithRetry<T>(endpoint, options, requireAuth);
+  }
+
+  private async requestWithRetry<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    requireAuth: boolean = false,
+    retryCount: number = 0
+  ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const method = options.method || 'GET';
 
@@ -133,7 +211,7 @@ class ApiService {
       const cacheKey = url;
       const cached = this.requestCache.get(cacheKey);
 
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      if (cached && Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
         console.log('🎯 Using cached response for:', endpoint);
         return cached.data;
       }
@@ -150,15 +228,23 @@ class ApiService {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
+
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data: ApiResponse<T> = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || `HTTP ${response.status}`);
+        const error = new Error(data.error?.message || `HTTP ${response.status}`) as any;
+        error.status = response.status;
+        throw error;
       }
 
       // Cache successful GET requests
@@ -170,9 +256,22 @@ class ApiService {
       }
 
       return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.error(`API request failed (attempt ${retryCount + 1}):`, error);
+
+      // Check if we should retry
+      if (retryCount < CONFIG.MAX_RETRIES && isRetryableError(error)) {
+        const delay = CONFIG.RETRY_DELAY * Math.pow(2, retryCount); // Exponential backoff
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await sleep(delay);
+        return this.requestWithRetry<T>(endpoint, options, requireAuth, retryCount + 1);
+      }
+
+      // If all retries failed or error is not retryable, return standardized error response
+      return createStandardResponse<T>(false, undefined, {
+        message: error.message || 'Request failed',
+        details: error
+      });
     }
   }
 
@@ -232,44 +331,32 @@ class ApiService {
 
   // Articles
   async getArticles(filters: ArticleFilters = {}): Promise<ApiResponse> {
-    if (useSupabase()) {
-      const result = await supabaseService.getArticles({
+    return handleSupabaseFallback(
+      () => supabaseService.getArticles({
         limit: filters.limit,
         offset: ((filters.page || 1) - 1) * (filters.limit || 10),
         status: filters.status
-      });
+      }),
+      () => {
+        const params = new URLSearchParams();
 
-      if (result.error) {
-        return {
-          success: false,
-          error: { message: 'Failed to fetch articles' },
-          timestamp: new Date().toISOString()
-        };
-      }
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (Array.isArray(value)) {
+              params.append(key, value.join(','));
+            } else {
+              params.append(key, value.toString());
+            }
+          }
+        });
 
-      return {
-        success: true,
-        data: result.data,
-        timestamp: new Date().toISOString()
-      };
-    }
+        const queryString = params.toString();
+        const endpoint = `/articles${queryString ? `?${queryString}` : ''}`;
 
-    const params = new URLSearchParams();
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          params.append(key, value.join(','));
-        } else {
-          params.append(key, value.toString());
-        }
-      }
-    });
-
-    const queryString = params.toString();
-    const endpoint = `/articles${queryString ? `?${queryString}` : ''}`;
-
-    return this.request(endpoint, {}, false); // Public endpoint
+        return this.request(endpoint, {}, false);
+      },
+      'Failed to fetch articles'
+    );
   }
 
   async getArticle(id: string): Promise<ApiResponse> {

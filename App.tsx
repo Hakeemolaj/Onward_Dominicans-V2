@@ -1,6 +1,8 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { setupPerformanceMonitoring, performanceTracker } from './utils/performanceMonitoring';
+import { useErrorHandler } from './utils/errorHandling';
 import TopHeader from './components/TopHeader';
 import NavBar from './components/NavBar';
 import HeroSection from './components/HeroSection';
@@ -26,6 +28,8 @@ import { apiService } from './services/apiService';
 type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
+  const { handleError } = useErrorHandler();
+
   const sectionRefs = {
     [SectionId.HOME]: useRef<HTMLDivElement>(null),
     [SectionId.NEWS_FEED]: useRef<HTMLDivElement>(null),
@@ -34,6 +38,16 @@ const App: React.FC = () => {
     [SectionId.MEET_THE_TEAM]: useRef<HTMLDivElement>(null),
     [SectionId.CONTACT_US]: useRef<HTMLDivElement>(null),
   };
+
+  // Initialize performance monitoring
+  useEffect(() => {
+    setupPerformanceMonitoring();
+
+    // Track app initialization time
+    const initStart = performance.now();
+    const initTime = performance.now() - initStart;
+    performanceTracker.trackComponentRender('App-Init', initTime);
+  }, []);
 
   const [activeSection, setActiveSection] = useState<SectionId>(SectionId.HOME);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);

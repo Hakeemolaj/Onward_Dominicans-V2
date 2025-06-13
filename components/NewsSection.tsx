@@ -1,7 +1,12 @@
 
-import React, { forwardRef, useMemo, useRef, useState, ChangeEvent, useEffect } from 'react';
+import React, { forwardRef, useMemo, useRef, useState, ChangeEvent, useCallback } from 'react';
 import { SectionProps, NewsArticle } from '../types';
 import { apiService } from '../services/apiService';
+import { useApiData } from '../hooks/useApiData';
+import { useDebounce, useThrottle } from '../utils/componentHelpers';
+import { MemoCache, PerformanceMonitor, useVirtualScroll } from '../utils/performance';
+import { useErrorHandler } from '../utils/errorHandling';
+import OptimizedLazyImage from './OptimizedLazyImage';
 
 interface NewsSectionProps extends SectionProps {
   onReadMoreClick: (article: NewsArticle) => void;
@@ -28,128 +33,137 @@ const SORT_OPTIONS_LABELS: Record<SortOption, string> = {
 const NewsSection = forwardRef<HTMLDivElement, NewsSectionProps>((props, ref) => {
   const { searchTerm, activeCategory, onCategoryChange, onSearchChange } = props;
   const newsSectionRef = ref || useRef<HTMLDivElement>(null);
+  const { handleError } = useErrorHandler();
 
   const [sortOrder, setSortOrder] = useState<SortOption>(SortOption.DATE_DESC);
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Load articles from backend
-  const loadArticles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('🔄 Loading articles from backend API...');
+  // Transform backend data to match frontend NewsArticle interface
+  const transformArticleData = useCallback((article: any): NewsArticle => ({
+    id: article.id,
+    title: article.title,
+    date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }),
+    summary: article.summary,
+    imageUrl: article.imageUrl || undefined,
+    category: article.category?.name || 'General',
+    author: {
+      name: article.author?.name || 'Unknown Author',
+      avatarUrl: article.author?.avatarUrl || undefined,
+      bio: article.author?.bio || ''
+    },
+    fullContent: article.content,
+    slug: article.slug,
+    tags: article.tags?.map((tag: any) => tag.name) || []
+  }), []);
 
-      const response = await apiService.getArticles({
+  // Use the custom hook for API data management with performance monitoring
+  const {
+    data: rawArticles,
+    loading,
+    error,
+    refetch
+  } = useApiData(
+    () => PerformanceMonitor.measureAsync('load-articles', () =>
+      apiService.getArticles({
         status: 'PUBLISHED',
         limit: 50,
         sortBy: 'publishedAt',
         sortOrder: 'desc'
-      });
-
-      if (response.success && response.data) {
-        // Transform backend data to match frontend NewsArticle type
-        const transformedArticles: NewsArticle[] = response.data.map(article => ({
-          id: article.id,
-          title: article.title,
-          date: new Date(article.publishedAt || article.createdAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
-          summary: article.summary,
-          imageUrl: article.imageUrl || undefined,
-          category: article.category?.name || 'General',
-          author: {
-            name: article.author?.name || 'Unknown Author',
-            avatarUrl: article.author?.avatarUrl || undefined,
-            bio: article.author?.bio || ''
-          },
-          fullContent: article.content,
-          slug: article.slug,
-          tags: article.tags?.map(tag => tag.name) || []
-        }));
-
-        setArticles(transformedArticles);
+      })
+    ),
+    {
+      autoFetch: true,
+      refetchInterval: 300000, // 5 minutes
+      onSuccess: (data) => {
         setLastUpdated(new Date());
-        console.log(`✅ Loaded ${transformedArticles.length} articles from backend`);
-      } else {
-        throw new Error(response.error?.message || 'Failed to load articles');
+        console.log('✅ Loaded articles from backend:', data.length);
+      },
+      onError: (errorMessage) => {
+        handleError(new Error(errorMessage), { component: 'NewsSection', operation: 'load-articles' });
       }
-    } catch (err) {
-      console.error('❌ Error loading articles:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load articles');
-      setArticles([]); // Clear articles on error
-    } finally {
-      setLoading(false);
     }
-  };
+  );
 
-  useEffect(() => {
-    // Initial load
-    loadArticles();
+  // Transform and memoize articles data
+  const articles = useMemo(() => {
+    if (!rawArticles) return [];
+    return PerformanceMonitor.measureSync('transform-articles', () =>
+      rawArticles.map(transformArticleData)
+    );
+  }, [rawArticles, transformArticleData]);
 
-    // Disable auto-refresh to prevent rate limiting
-    // Set up auto-refresh every 5 minutes instead of 30 seconds
-    const refreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refreshing articles...');
-      loadArticles();
-    }, 300000); // 5 minutes (300,000 ms)
-
-    // Cleanup interval on unmount
-    return () => clearInterval(refreshInterval);
-  }, []);
-
+  // Memoized category extraction with performance optimization
   const uniqueCategories = useMemo(() => {
-    const categories = new Set<string>();
-    articles.forEach(article => {
-      if (article.category) {
-        categories.add(article.category);
-      }
-    });
-    return Array.from(categories).sort();
+    return MemoCache.memoize(
+      (articles: NewsArticle[]) => {
+        const categories = new Set<string>();
+        articles.forEach(article => {
+          if (article.category) {
+            categories.add(article.category);
+          }
+        });
+        return Array.from(categories).sort();
+      },
+      (articles) => `categories-${articles.length}-${articles.map(a => a.category).join(',')}`
+    )(articles);
   }, [articles]);
 
-  const handleSortChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  // Debounced sort change handler
+  const handleSortChange = useDebounce((e: ChangeEvent<HTMLSelectElement>) => {
     setSortOrder(e.target.value as SortOption);
-  };
+  }, 150);
 
+  // Optimized filtering with memoization
   const filteredArticles = useMemo(() => {
-    let filteredList = articles;
+    return MemoCache.memoize(
+      (articles: NewsArticle[], activeCategory: string | null, searchTerm: string, sortOrder: SortOption) => {
+        return PerformanceMonitor.measureSync('filter-articles', () => {
+          let filteredList = articles;
 
-    if (activeCategory) {
-      filteredList = filteredList.filter(article => article.category === activeCategory);
-    }
+          // Category filtering
+          if (activeCategory) {
+            filteredList = filteredList.filter(article => article.category === activeCategory);
+          }
 
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filteredList = filteredList.filter(article =>
-        article.title.toLowerCase().includes(lowerSearchTerm) ||
-        article.summary.toLowerCase().includes(lowerSearchTerm) ||
-        (article.author && article.author.name.toLowerCase().includes(lowerSearchTerm))
-      );
-    }
+          // Search filtering
+          if (searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            filteredList = filteredList.filter(article =>
+              article.title.toLowerCase().includes(lowerSearchTerm) ||
+              article.summary.toLowerCase().includes(lowerSearchTerm) ||
+              (article.author && article.author.name.toLowerCase().includes(lowerSearchTerm))
+            );
+          }
 
-    let sortedArticles = [...filteredList];
-    switch (sortOrder) {
-      case SortOption.DATE_ASC:
-        sortedArticles.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        break;
-      case SortOption.TITLE_ASC:
-        sortedArticles.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case SortOption.TITLE_DESC:
-        sortedArticles.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      case SortOption.DATE_DESC:
-      default:
-        sortedArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        break;
-    }
+          // Sorting
+          let sortedArticles = [...filteredList];
+          switch (sortOrder) {
+            case SortOption.DATE_ASC:
+              sortedArticles.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              break;
+            case SortOption.TITLE_ASC:
+              sortedArticles.sort((a, b) => a.title.localeCompare(b.title));
+              break;
+            case SortOption.TITLE_DESC:
+              sortedArticles.sort((a, b) => b.title.localeCompare(a.title));
+              break;
+            case SortOption.DATE_DESC:
+            default:
+              sortedArticles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              break;
+          }
 
-    return sortedArticles;
+          return sortedArticles;
+        });
+      },
+      (articles, activeCategory, searchTerm, sortOrder) =>
+        `filter-${articles.length}-${activeCategory || 'all'}-${searchTerm}-${sortOrder}`,
+      60000 // Cache for 1 minute
+    )(articles, activeCategory, searchTerm, sortOrder);
   }, [articles, activeCategory, searchTerm, sortOrder]);
 
   let sectionTitle = "Latest News & Stories";
@@ -164,11 +178,65 @@ const NewsSection = forwardRef<HTMLDivElement, NewsSectionProps>((props, ref) =>
   const handleClearFilters = () => {
     onCategoryChange(null);
     onSearchChange('');
-    setSortOrder(SortOption.DATE_DESC); 
+    setSortOrder(SortOption.DATE_DESC);
     if (newsSectionRef && 'current' in newsSectionRef && newsSectionRef.current) {
       newsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  // Virtual scrolling for large lists (>20 articles)
+  const shouldUseVirtualScrolling = filteredArticles.length > 20;
+  const ARTICLE_HEIGHT = 400; // Approximate height of each article card
+  const CONTAINER_HEIGHT = 800; // Height of the scrollable container
+
+  const virtualScrollProps = useVirtualScroll(
+    filteredArticles,
+    ARTICLE_HEIGHT,
+    CONTAINER_HEIGHT
+  );
+
+  // Optimized article card component
+  const ArticleCard = useCallback(({ article, index }: { article: NewsArticle; index: number }) => (
+    <div
+      key={article.id}
+      className="bg-white dark:bg-slate-700 rounded-lg shadow-xl dark:shadow-slate-900/50 overflow-hidden flex flex-col transform transition-all duration-300 hover:shadow-2xl dark:hover:shadow-slate-900/70 hover:scale-[1.02]"
+      style={shouldUseVirtualScrolling ? { height: ARTICLE_HEIGHT } : undefined}
+    >
+      <OptimizedLazyImage
+        src={article.imageUrl || `https://picsum.photos/seed/${article.id}/400/250`}
+        alt={article.title}
+        className="w-full h-52 object-cover cursor-pointer"
+        onClick={() => props.onReadMoreClick(article)}
+        loading="lazy"
+      />
+      <div className="p-6 flex flex-col flex-grow">
+        {article.category && (
+          <p className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-1">
+            {article.category}
+          </p>
+        )}
+        <h3
+          className="text-xl font-semibold text-slate-700 dark:text-slate-100 mb-2 cursor-pointer hover:text-yellow-700 dark:hover:text-yellow-400"
+          onClick={() => props.onReadMoreClick(article)}
+        >
+          {article.title}
+        </h3>
+        <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+          By <span className="font-medium text-slate-600 dark:text-slate-300">{article.author.name}</span> | {article.date}
+        </div>
+        <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 flex-grow line-clamp-3">
+          {article.summary}
+        </p>
+        <button
+          onClick={() => props.onReadMoreClick(article)}
+          className="mt-auto text-sm text-yellow-700 dark:text-yellow-400 hover:text-yellow-600 dark:hover:text-yellow-300 font-semibold self-start hover:underline focus:outline-none"
+          aria-label={`Read more about ${article.title}`}
+        >
+          Read More &rarr;
+        </button>
+      </div>
+    </div>
+  ), [props.onReadMoreClick, shouldUseVirtualScrolling]);
 
   return (
     <section 
@@ -234,7 +302,7 @@ const NewsSection = forwardRef<HTMLDivElement, NewsSectionProps>((props, ref) =>
             </div>
 
             <button
-              onClick={() => loadArticles()}
+              onClick={() => refetch()}
               disabled={loading}
               className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 text-white rounded-full transition-colors flex items-center space-x-2 text-sm font-medium shadow-sm"
               title="Refresh articles"
@@ -256,51 +324,43 @@ const NewsSection = forwardRef<HTMLDivElement, NewsSectionProps>((props, ref) =>
           <div className="text-center py-12">
             <p className="text-red-600 dark:text-red-400 mb-4">Error loading articles: {error}</p>
             <button
-              onClick={() => loadArticles()}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
             >
               Retry
             </button>
           </div>
         ) : filteredArticles.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredArticles.map(article => (
-              <div 
-                key={article.id} 
-                className="bg-white dark:bg-slate-700 rounded-lg shadow-xl dark:shadow-slate-900/50 overflow-hidden flex flex-col transform transition-all duration-300 hover:shadow-2xl dark:hover:shadow-slate-900/70 hover:scale-[1.02]"
+          shouldUseVirtualScrolling ? (
+            // Virtual scrolling for large lists
+            <div className="relative">
+              <div
+                style={{ height: CONTAINER_HEIGHT, overflow: 'auto' }}
+                onScroll={virtualScrollProps.onScroll}
+                className="scrollbar-thin scrollbar-thumb-yellow-500 scrollbar-track-gray-200 dark:scrollbar-track-gray-700"
               >
-                <img 
-                  src={article.imageUrl || `https://picsum.photos/seed/${article.id}/400/250`} 
-                  alt={article.title} 
-                  className="w-full h-52 object-cover cursor-pointer"
-                  onClick={() => props.onReadMoreClick(article)}
-                  loading="lazy"
-                />
-                <div className="p-6 flex flex-col flex-grow">
-                  {article.category && (
-                    <p className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-1">{article.category}</p>
-                  )}
-                  <h3 
-                    className="text-xl font-semibold text-slate-700 dark:text-slate-100 mb-2 cursor-pointer hover:text-yellow-700 dark:hover:text-yellow-400"
-                    onClick={() => props.onReadMoreClick(article)}
-                  >
-                    {article.title}
-                  </h3>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                    By <span className="font-medium text-slate-600 dark:text-slate-300">{article.author.name}</span> | {article.date}
+                <div style={{ height: virtualScrollProps.totalHeight, position: 'relative' }}>
+                  <div style={{ transform: `translateY(${virtualScrollProps.offsetY}px)` }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {virtualScrollProps.visibleItems.map((article, index) => (
+                        <ArticleCard key={article.id} article={article} index={index} />
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 flex-grow line-clamp-3">{article.summary}</p>
-                  <button 
-                    onClick={() => props.onReadMoreClick(article)}
-                    className="mt-auto text-sm text-yellow-700 dark:text-yellow-400 hover:text-yellow-600 dark:hover:text-yellow-300 font-semibold self-start hover:underline focus:outline-none"
-                    aria-label={`Read more about ${article.title}`}
-                  >
-                    Read More &rarr;
-                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="text-center mt-4 text-sm text-slate-500 dark:text-slate-400">
+                Showing {virtualScrollProps.visibleItems.length} of {filteredArticles.length} articles
+              </div>
+            </div>
+          ) : (
+            // Regular grid for smaller lists
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredArticles.map((article, index) => (
+                <ArticleCard key={article.id} article={article} index={index} />
+              ))}
+            </div>
+          )
         ) : (
           <p className="text-center text-slate-600 dark:text-slate-300 text-lg py-10 bg-white dark:bg-slate-700 rounded-md shadow">
             {articles.length === 0 ? 'No articles available.' : 'No articles found matching your criteria.'}
